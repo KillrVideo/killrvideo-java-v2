@@ -1,0 +1,71 @@
+# List of all kind of operations available in the GraphQL endpoint 
+# -------------------------------------------------------------------
+schema {
+
+    # Read-only operations : fetch, search...
+    # Every GraphQL service has a query type 
+    query: Query
+    
+    # Write operations ; insert, update delete
+    # Every GraphQL service may or may not have a mutation type
+    mutation: Mutation
+}
+
+# -------------------------------------------
+# Read-only operations : fetch, search...
+# -------------------------------------------
+type Query {
+
+    # Provide all comments related to a user
+    getCommentsOnUser(query: CommentByUserInput) [Comment]
+    
+    # Provide all comments related to a video
+    getCommentsOnVideo(query: CommentByVideoInput) [Comment]
+}
+
+# ------------------------------
+# - Domain entities           --
+# ------------------------------
+type Comment {
+    # User identifier (Not nullable)
+    userid:   String!
+    # User identifier (Not nullable)
+    videoid:  String!
+    # Cannot use ID (not unique in DB)
+    commentid: String!
+    # Content of the comment
+    comment:  String
+    # Date do not exist as JSON must define explicit format
+    dateOfComment: String
+}
+
+# ------------------------------
+# - Operation Parameters      --
+# ------------------------------
+input CommentByUserInput {
+    userid:    String!
+    commentid: String
+    pageSize:  Int
+    pageState: String
+}
+input CommentByVideoInput {
+    videoid:   String!
+    commentid: String
+    pageSize:  Int
+    pageState: String
+}
+input CommentInput {
+    userid:    String!
+    videoid:   String!
+    commentid: String!
+    comment:   String
+}
+
+# -------------------------------------------
+# - Write operations
+# -------------------------------------------
+type Mutation {
+    
+    # Insert a comment in 2 tables
+    insertComment(comment: CommentInput): Comment
+}
