@@ -3,16 +3,21 @@ package com.killrvideo.dse.dao;
 import static com.killrvideo.core.utils.FutureUtils.asCompletableFuture;
 
 import java.time.Instant;
+import java.util.Collections;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Repository;
 import org.springframework.util.Assert;
 
@@ -62,6 +67,23 @@ public class SuggestedVideosDseDao extends AbstractDseDao implements KillrVideoT
     private KillrVideoTraversalSource traversalSource;
     
     /**
+     * Wrap search queries with "paging":"driver" to dynamically enable
+     * paging to ensure we pull back all available results in the application.
+     * https://docs.datastax.com/en/dse/6.0/cql/cql/cql_using/search_index/cursorsDeepPaging.html#cursorsDeepPaging__using-paging-with-cql-solr-queries-solrquery-Rim2GsbY
+     */
+    private String pagingDriverStart = "{\"q\":\"";
+    private String pagingDriverEnd = "\", \"paging\":\"driver\"}";
+    
+    /**
+     * Create a set of sentence conjunctions and other "undesirable"
+     * words we will use later to exclude from search results.
+     * Had to use .split() below because of the following conversation:
+     * https://github.com/spring-projects/spring-boot/issues/501
+     */
+    @Value("#{'${killrvideo.search.ignoredWords}'.split(',')}")
+    private Set<String> ignoredWords = new HashSet<>();
+    
+    /**
      * Default constructor.
      */
     public SuggestedVideosDseDao() {
@@ -93,7 +115,7 @@ public class SuggestedVideosDseDao extends AbstractDseDao implements KillrVideoT
      **/
     public CompletableFuture< ResultListPage<Video> > getRelatedVideos(UUID videoId, int fetchSize, Optional<String> pagingState) {
         CompletableFuture<Result<Video>> relatedVideosFuture = findVideoById(videoId).thenCompose(video -> {
-            BoundStatement stmt = createStatementToSearchVideos(videoId, fetchSize, pagingState);
+            BoundStatement stmt = createStatementToSearchVideos(video, fetchSize, pagingState);
             return asCompletableFuture(mapperVideo.mapAsync(dseSession.executeAsync(stmt)));
         });
         // so far I got a Result<Video> async, need to fetch only expected page and save paging state
@@ -115,9 +137,7 @@ public class SuggestedVideosDseDao extends AbstractDseDao implements KillrVideoT
         Assert.notNull(userid, "videoid is required to update statistics");
         
         // Build statement
-        KillrVideoTraversal graphTraversal = traversalSource
-                .users(userid.toString())
-                .recommendByUserRating(100, 4, 250, 10);
+        KillrVideoTraversal graphTraversal = traversalSource.users(userid.toString()).recommendByUserRating(5, 4, 1000, 5);
         GraphStatement graphStatement = DseGraph.statementFromTraversal(graphTraversal);
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("Recommend TRAVERSAL is {} ",  DseUtils.displayGraphTranserval(graphTraversal));
@@ -148,25 +168,72 @@ public class SuggestedVideosDseDao extends AbstractDseDao implements KillrVideoT
      * while "preserving" our initial video traversal position. Since the video vertex passes
      * through each step we do not need to worry about traversing back to video for each step
      * in the chain.
+     * 
+     * May be relevant to have a full sample traversal:
+     * g.V().has("video","videoId", 6741b34e-03c7-4d83-bf55-deed496d6e03)
+     *  .fold()
+     *  .coalesce(__.unfold(),
+     *   __.addV("video")
+     *     .property("videoId",6741b34e-03c7-4d83-bf55-deed496d6e03))
+     *     .property("added_date",Thu Aug 09 11:00:44 CEST 2018)
+     *     .property("name","Paris JHipster Meetup #9")
+     *     .property("description","xxxxxx")
+     *     .property("preview_image_location","//img.youtube.com/vi/hOTjLOPXg48/hqdefault.jpg")
+     *     // Add Edge
+     *     .sideEffect(
+     *        __.as("^video").coalesce(
+     *           __.in("uploaded")
+     *             .hasLabel("user")
+     *             .has("userId",8a70e329-59f8-4e2e-aae8-1788c94e8410),
+     *           __.V()
+     *             .has("user","userId",8a70e329-59f8-4e2e-aae8-1788c94e8410)
+     *             .addE("uploaded")
+     *             .to("^video").inV())
+     *      )
+     *      // Tag with X (multiple times)
+     *      .sideEffect(
+     *        __.as("^video").coalesce(
+     *          __.out("taggedWith")
+     *            .hasLabel("tag")
+     *            .has("name","X"),
+     *          __.coalesce(
+     *            __.V().has("tag","name","X"),
+     *            __.addV("tag")
+     *              .property("name","X")
+     *               .property("tagged_date",Thu Aug 09 11:00:44 CEST 2018)
+     *              ).addE("taggedWith").from("^video").inV())
+     *       )
+     *       // Tag with FF4j
+     *       .sideEffect(
+     *         __.as("^video").coalesce(
+     *           __.out("taggedWith")
+     *             .hasLabel("tag")
+     *             .has("name","ff4j"),
+     *           __.coalesce(
+     *            __.V().has("tag","name","ff4j"),
+     *            __.addV("tag")
+     *              .property("name","ff4j")
+     *              .property("tagged_date",Thu Aug 09 11:00:44 CEST 2018))
+     *              .addE("taggedWith").from("^video").inV()))
      */
     @SuppressWarnings({"rawtypes","unchecked"})
     public void updateGraphNewVideo(Video video) {
-        
-        final KillrVideoTraversal traversal = traversalSource.video(
-                video.getVideoid(), video.getName(), 
-                video.getAddedDate(), video.getDescription(), 
-                video.getPreviewImageLocation())
-        .add(__.uploaded(video.getUserid()));
-
-        Sets.newHashSet(video.getTags()).forEach(tag -> {
+        final KillrVideoTraversal traversal =
+          // Add video Node
+          traversalSource.video(video.getVideoid(), video.getName(), new Date(), video.getDescription(), video.getPreviewImageLocation())
+          // Add Uploaded Edge
+          .add(__.uploaded(video.getUserid()));
+          // Add Tags Nodes and edges
+          Sets.newHashSet(video.getTags()).forEach(tag -> {
             traversal.add(__.taggedWith(tag,  new Date()));
-        });
+          });
 
         /**
          * Now that our video is successfully applied lets
          * insert that video into our graph for the recommendation engine
          */
         GraphStatement gStatement = DseGraph.statementFromTraversal(traversal);
+        LOGGER.info("Traversal for 'updateGraphNewVideo' : {}", DseUtils.displayGraphTranserval(traversal));
         asCompletableFuture(dseSession.executeGraphAsync(gStatement)).whenComplete((graphResultSet, ex) -> {
             if (graphResultSet != null) {
                 LOGGER.debug("Added video vertex, uploaded, and taggedWith edges: " + graphResultSet.all());
@@ -190,6 +257,7 @@ public class SuggestedVideosDseDao extends AbstractDseDao implements KillrVideoT
     public void updateGraphNewUser(User user) {
         final KillrVideoTraversal traversal = traversalSource.user(user.getUserid(), user.getEmail(), user.getCreatedAt());
         GraphStatement gStatement = DseGraph.statementFromTraversal(traversal);
+        LOGGER.info("Executed transversal for 'updateGraphNewUser' : {}", DseUtils.displayGraphTranserval(traversal));
         asCompletableFuture(dseSession.executeGraphAsync(gStatement)).whenComplete((graphResultSet, ex) -> {
             if (graphResultSet != null) {
                 LOGGER.debug("Added user vertex: " + graphResultSet.one());
@@ -214,6 +282,7 @@ public class SuggestedVideosDseDao extends AbstractDseDao implements KillrVideoT
         final KillrVideoTraversal traversal = traversalSource.videos(vrbu.getVideoid().toString())
                                                              .add(__.rated(vrbu.getUserid(), vrbu.getRating()));
         GraphStatement gStatement = DseGraph.statementFromTraversal(traversal);
+        LOGGER.info("Executed transversal for 'updateGraphNewUserRating' : {}", DseUtils.displayGraphTranserval(traversal));
         asCompletableFuture(dseSession.executeGraphAsync(gStatement)).whenComplete((graphResultSet, ex) -> {
             if (graphResultSet != null) {
                 LOGGER.debug("Added rating between user and video: " + graphResultSet.one());
@@ -242,19 +311,37 @@ public class SuggestedVideosDseDao extends AbstractDseDao implements KillrVideoT
     }
     
     /**
-     * Use a Lucene based MoreLikeThis search with DSE Search
-     * !mlt = perform MoreLikeThis
-     * qf = More like this fields to consider
-     * mindf = MLT Minimum Document Frequency - the frequency at which words will be ignored which do not occur in at least this many docs
-     * mintf = MLT Minimum Term Frequency - the frequency below which terms will be ignored in the source doc
-     * 
-     * TODO Figure out what is going on with paging:driver returning strange results
-     **/
-    private BoundStatement createStatementToSearchVideos(UUID videoId, int fetchSize, Optional<String> pagingState) {
+     * Perform a query using DSE Search to find other videos that are similar
+     * to the "request" video using terms parsed from the name, tags,
+     * and description columns of the "request" video.
+     *
+     * The regex below will help us parse out individual words that we add to our
+     * set. The set will automatically handle any duplicates that we parse out.
+     * We can then use the end result termSet to query across the name, tags, and
+     * description columns to find similar videos.
+     */
+    private BoundStatement createStatementToSearchVideos(Video video, int fetchSize, Optional<String> pagingState) {
+        final String space = " ";
+        final String eachWordRegEx = "[^\\w]";
+        final String eachWordPattern = Pattern.compile(eachWordRegEx).pattern();
+
+        final HashSet<String> termSet = new HashSet<>(50);
+        Collections.addAll(termSet, video.getName().toLowerCase().split(eachWordPattern));
+        Collections.addAll(video.getTags()); // getTags already returns a set
+        Collections.addAll(termSet, video.getDescription().toLowerCase().split(eachWordPattern));
+        termSet.removeAll(ignoredWords);
+        termSet.removeIf(String::isEmpty);
+
+        final String delimitedTermList = termSet.stream().map(Object::toString).collect(Collectors.joining(","));
+        LOGGER.debug("delimitedTermList is : " + delimitedTermList);
+       
         final StringBuilder solrQuery = new StringBuilder();
-        solrQuery.append("{\"q\":\"{!mlt qf=\\\"name tags description\\\" mindf=2 mintf=2}");
-        solrQuery.append(videoId);
-        solrQuery.append("\", \"paging\":\"off\"}");
+        solrQuery.append(pagingDriverStart);
+        solrQuery.append("name:").append(delimitedTermList).append(space);
+        solrQuery.append("tags:").append(delimitedTermList).append(space);
+        solrQuery.append("description:").append(delimitedTermList);
+        solrQuery.append(pagingDriverEnd);
+        
         BoundStatement statement = findRelatedVideos.bind().setString(SchemaConstants.SOLR_QUERY, solrQuery.toString());
         pagingState.ifPresent( x -> statement.setPagingState(PagingState.fromString(x)));
         statement.setFetchSize(fetchSize);

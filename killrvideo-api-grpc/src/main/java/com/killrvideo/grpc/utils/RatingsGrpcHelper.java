@@ -4,6 +4,7 @@ import static org.apache.commons.lang3.StringUtils.isBlank;
 
 import java.time.Instant;
 import java.util.Optional;
+import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,7 +21,6 @@ import killrvideo.ratings.RatingsServiceOuterClass.GetRatingResponse;
 import killrvideo.ratings.RatingsServiceOuterClass.GetUserRatingRequest;
 import killrvideo.ratings.RatingsServiceOuterClass.GetUserRatingResponse;
 import killrvideo.ratings.RatingsServiceOuterClass.RateVideoRequest;
-import killrvideo.ratings.events.RatingsEvents.UserRatedVideo;
 
 /**
  * Helper and mappers for DAO <=> GRPC Communications
@@ -78,13 +78,11 @@ public class RatingsGrpcHelper extends AbstractGrpcHelper {
      * @param request
      * @param commentCreationDate
      */
-    public void publishVideoRatedEvent(RateVideoRequest request, Instant commentCreationDate) {
-        msgDao.publishEvent(UserRatedVideo.newBuilder()
-                .setVideoId(request.getVideoId())
-                .setRating(request.getRating())
-                .setUserId(request.getUserId())
-                .setRatingTimestamp(GrpcMapper.instantToTimeStamp(commentCreationDate))
-                .build());
+    public void publishVideoRatedEvent(RateVideoRequest grpcReq, Instant commentCreationDate) {
+        UUID videoid = UUID.fromString(grpcReq.getVideoId().getValue());
+        UUID userid  = UUID.fromString(grpcReq.getUserId().getValue());
+        Integer rating = grpcReq.getRating();
+        msgDao.publishEvent(new VideoRatingByUser(videoid, userid, rating));
     }
     
    /**

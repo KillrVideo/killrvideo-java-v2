@@ -69,7 +69,6 @@ public class StatisticsGrpcService extends StatisticsServiceImplBase {
                 messagingDao.publishExceptionEvent(new ErrorEvent(grpcReq, error), error);
                 grpcResObserver.onError(Status.INTERNAL.withCause(error).asRuntimeException());
             } else {
-                helper.traceSuccess(LOGGER, "recordPlaybackStarted", starts);
                 grpcResObserver.onNext(RecordPlaybackStartedResponse.newBuilder().build());
                 grpcResObserver.onCompleted();
             }

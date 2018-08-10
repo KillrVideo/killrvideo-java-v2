@@ -2,7 +2,6 @@ package com.killrvideo.grpc.utils;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
 
-import java.util.Date;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -13,7 +12,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
 import com.google.common.collect.Sets;
-import com.google.protobuf.Timestamp;
 import com.killrvideo.dse.dao.dto.LatestVideosPage;
 import com.killrvideo.dse.model.LatestVideo;
 import com.killrvideo.dse.model.UserVideo;
@@ -33,7 +31,6 @@ import killrvideo.video_catalog.VideoCatalogServiceOuterClass.GetVideoResponse;
 import killrvideo.video_catalog.VideoCatalogServiceOuterClass.SubmitYouTubeVideoRequest;
 import killrvideo.video_catalog.VideoCatalogServiceOuterClass.VideoLocationType;
 import killrvideo.video_catalog.VideoCatalogServiceOuterClass.VideoPreview;
-import killrvideo.video_catalog.events.VideoCatalogEvents.YouTubeVideoAdded;
 
 /**
  * Validation of inputs and mapping
@@ -138,18 +135,7 @@ public class VideoCatalogGrpcHelper extends AbstractGrpcHelper {
      * responsible for adding data into our graph recommendation engine.
      */
     public void publishSubmitVideoSuccess(Video video) {
-        Timestamp now = GrpcMapper.dateToTimestamp(new Date());
-        final YouTubeVideoAdded.Builder youTubeVideoAdded = YouTubeVideoAdded.newBuilder()
-                .setAddedDate(now)
-                .setDescription(video.getDescription())
-                .setLocation(video.getLocation())
-                .setName(video.getName())
-                .setPreviewImageLocation(video.getPreviewImageLocation())
-                .setTimestamp(now)
-                .setUserId(GrpcMapper.uuidToUuid(video.getUserid()))
-                .setVideoId(GrpcMapper.uuidToUuid(video.getVideoid()))
-                .addAllTags(video.getTags());
-        msgDao.publishEvent(youTubeVideoAdded.build());
+        msgDao.publishEvent(video);
     }
  
     public Video mapSubmitYouTubeVideoRequestAsVideo(SubmitYouTubeVideoRequest request) {

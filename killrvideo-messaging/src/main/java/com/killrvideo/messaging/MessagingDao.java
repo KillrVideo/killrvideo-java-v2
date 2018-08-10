@@ -1,5 +1,7 @@
 package com.killrvideo.messaging;
 
+import javax.annotation.PostConstruct;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,7 +24,14 @@ public class MessagingDao {
     @Autowired
     private EventBus eventBus;
     
-    /**
+    @PostConstruct
+    public void startup() {
+        if (null != eventBus) {
+            LOGGER.info("Starting Messaging DAO on bus {}", eventBus.identifier());
+        }
+    }
+    
+     /**
      * Publish error Message.
      *
      * @param request
@@ -42,6 +51,7 @@ public class MessagingDao {
      *      current object
      */
     public void publishEvent(Object obj) {
+        LOGGER.info("Publishing event {} ", obj.getClass().getName());
         eventBus.post(obj);
     }
     

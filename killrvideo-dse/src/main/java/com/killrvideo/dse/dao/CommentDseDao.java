@@ -13,6 +13,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.stream.IntStream;
 
 import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -79,6 +80,23 @@ public class CommentDseDao extends AbstractDseDao {
      */
     public CommentDseDao(DseSession dseSession) {
         super(dseSession);
+    }
+    
+    /**
+     * Cassandra and DSE Session are stateless. For each request a coordinator is chosen
+     * and execute query against the cluster. The Driver is stateful, it has to maintain some
+     * network connections pool, here we properly cleanu things.
+     * 
+     * @throws Exception
+     *      error on cleanup.
+     */
+    @PreDestroy
+    public void onDestroy() throws Exception {
+        if (dseSession  != null && !dseSession.isClosed()) {
+            LOGGER.info("Closing DSE Cluster (clean up at shutdown)");
+            dseSession.getCluster().close();
+            LOGGER.info(" + DSE Cluster is now closed.");
+        }
     }
     
     /** {@inheritDoc} */

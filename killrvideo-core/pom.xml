@@ -15,22 +15,18 @@
 	</parent>
 
 	<dependencies>
-	
 		<dependency>
-    			<groupId>com.evanlennick</groupId>
-    			<artifactId>retry4j</artifactId>
+			<groupId>com.evanlennick</groupId>
+			<artifactId>retry4j</artifactId>
 		</dependency>
-		
 		<dependency>
 			<groupId>com.xqbase</groupId>
 			<artifactId>etcd4j</artifactId>
 		</dependency>
-		
 		<dependency>
 			<groupId>org.apache.commons</groupId>
 			<artifactId>commons-lang3</artifactId>
 		</dependency>
-		
 		<dependency>
 			<groupId>com.google.guava</groupId>
 			<artifactId>guava</artifactId>
@@ -39,7 +35,6 @@
 			<groupId>org.springframework</groupId>
 			<artifactId>spring-context</artifactId>
 		</dependency>
-		
 		<dependency>
 			<groupId>ch.qos.logback</groupId>
 			<artifactId>logback-classic</artifactId>
@@ -64,13 +59,11 @@
 			<groupId>javax.el</groupId>
 			<artifactId>javax.el-api</artifactId>
 		</dependency>
-		
 		<dependency>
 			<groupId>org.ff4j</groupId>
 			<artifactId>ff4j-core</artifactId>
 		</dependency>
-		
-		
+
 	</dependencies>
 
 </project>

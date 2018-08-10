@@ -1,71 +1,45 @@
-# List of all kind of operations available in the GraphQL endpoint 
-# -------------------------------------------------------------------
+# Killrvideo GraphQL API
 schema {
-
-    # Read-only operations : fetch, search...
-    # Every GraphQL service has a query type 
+    # Read-only operations : fetch, search... (Every GraphQL service has a query type) 
     query: Query
     
-    # Write operations ; insert, update delete
-    # Every GraphQL service may or may not have a mutation type
+    # Write operations ; insert, update delete (Every GraphQL service may or may not have a mutation type)
     mutation: Mutation
 }
 
-# -------------------------------------------
-# Read-only operations : fetch, search...
-# -------------------------------------------
-type Query {
-
-    # Provide all comments related to a user
-    getCommentsOnUser(query: CommentByUserInput) [Comment]
-    
-    # Provide all comments related to a video
-    getCommentsOnVideo(query: CommentByVideoInput) [Comment]
-}
-
-# ------------------------------
-# - Domain entities           --
-# ------------------------------
-type Comment {
-    # User identifier (Not nullable)
+# Represent a video comment in GraphQL format
+type CommentGQL {
+    #Unique identifier for a user (tech id)
+    commentid: ID!
+    # Unique identifier for a user (required)
     userid:   String!
-    # User identifier (Not nullable)
+    # Unique identifier for a video (required)
     videoid:  String!
-    # Cannot use ID (not unique in DB)
-    commentid: String!
-    # Content of the comment
+    # Text of the comment
     comment:  String
-    # Date do not exist as JSON must define explicit format
+    # Insertion Date
     dateOfComment: String
 }
 
-# ------------------------------
-# - Operation Parameters      --
-# ------------------------------
-input CommentByUserInput {
-    userid:    String!
-    commentid: String
-    pageSize:  Int
-    pageState: String
-}
-input CommentByVideoInput {
-    videoid:   String!
-    commentid: String
-    pageSize:  Int
-    pageState: String
-}
-input CommentInput {
-    userid:    String!
-    videoid:   String!
-    commentid: String!
-    comment:   String
+type ResultPageCommentGQL {
+	listOfResults: [CommentGQL]!
+	nextPage: String
 }
 
-# -------------------------------------------
-# - Write operations
-# -------------------------------------------
+# Searches and read-only operations on KillrVideo Keyspace
+type Query {
+  
+  # Search in table comment_by_video, eventually with Pagination.
+  getVideoComments(videoid: String!, commentid: String, pageSize: Int , pageState: String): ResultPageCommentGQL!
+  
+  # Search in table comment_by_user, eventually with Pagination.
+  getUserComments(userid: String!, commentid: String, pageSize: Int , pageState: String): ResultPageCommentGQL!
+}
+
+# Operation that will updated data in DB
 type Mutation {
-    
-    # Insert a comment in 2 tables
-    insertComment(comment: CommentInput): Comment
+  
+  # Add a comment for dedicated video and known user.
+  commentOnVideo(commentid: String!, videoid: String!, userid: String!, text: String!): CommentGQL!
+  
 }

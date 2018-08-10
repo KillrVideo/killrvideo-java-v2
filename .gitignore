@@ -1,3 +1,16 @@
+
+# eclipse conf file
+.settings
+.classpath
+.project
+.cache
+
+# idea conf files
+.idea
+*.ipr
+*.iws
+*.iml
+
 # Compiled class file
 *.class
 
@@ -21,3 +34,16 @@
 
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
+
+# building
+target
+build
+tmp
+dist
+
+# misc
+.DS_Store
+
+
+/.metadata/
+/.recommenders/

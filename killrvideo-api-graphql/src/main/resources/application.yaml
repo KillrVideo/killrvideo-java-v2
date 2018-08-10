@@ -1,0 +1,46 @@
+spring:
+  output:
+    ansi:
+      enabled: ALWAYS
+      
+server:
+  port: 8081
+             
+# Support keys for our application
+
+# Custom 'killrvideo' keys App
+killrvideo:
+  application: 
+    name: killrvideo-graphql
+    instance: 
+      id: 0
+      
+  cassandra:
+    clustername: killrvideo
+    mutation-error-log: /tmp/killrvideo-mutation-errors.log
+    maxNumberOfTries: 10
+    delayBetweenTries: 2
+    
+  ssl:
+    CACertFileLocation: cassandra.cert  
+ 
+  threadpool:
+    minThreads: 5
+    maxThreads: 10
+    ttlThreads: 60
+    queueSize: 1000
+  
+  graph:
+    timeout: 3000
+    recommendation.name: killrvideo_video_recommendations
+  
+  etcd:
+    host: 10.0.75.1
+    port: 2379
+    maxNumberOfTries: 30
+    delayBetweenTries: 5
+    
+
+  search:
+    ignoredWords: and,or,but,nor,so,for,yet,after,as,till,to,the,at,in,not,of,this,an,are,by,is,it,on,why,i,a,be,can,these,that,they,had,do
+

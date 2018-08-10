@@ -4,7 +4,7 @@ version: '3'
 services:
   # Start the KillrVideo web UI on port 3000
   web:
-    image: killrvideo/killrvideo-web:1.2.7
+    image: killrvideo/killrvideo-web:1.2.8
     ports:
     - "3000:3000"
     depends_on:
@@ -34,7 +34,7 @@ services:
 
   # One instance of DataStax Studio
   studio:
-    image: killrvideo/killrvideo-studio:2.0.0
+    image: datastax/dse-studio:6.0.0
     ports:
     # The Web UI exposed to our host
     - "9091:9091"
@@ -43,5 +43,4 @@ services:
     environment:
       SERVICE_9091_NAME: studio
       DS_LICENSE: accept
-
 

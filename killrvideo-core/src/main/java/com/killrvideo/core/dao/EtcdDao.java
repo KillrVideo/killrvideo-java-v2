@@ -66,7 +66,7 @@ public class EtcdDao {
         LOGGER.info(" + Client created");
         // Enforcing read event if value is empty is only ways to ensure ETCD is stared and available.
         read("/", false);
-        LOGGER.info(" + Connection etablished to ETCD Server");
+        LOGGER.info("[OK] Connection etablished to ETCD Server");
     }
     
     /**

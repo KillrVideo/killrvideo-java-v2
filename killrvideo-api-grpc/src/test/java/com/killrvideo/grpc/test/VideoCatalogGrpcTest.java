@@ -19,7 +19,7 @@ public class VideoCatalogGrpcTest {
     public void testGetLatestVideos() throws Exception {
         
         //-->
-        KillrVideoGrpcClient killrVideoClient = new KillrVideoGrpcClient("localhost", 8899);
+        KillrVideoGrpcClient killrVideoClient = new KillrVideoGrpcClient("10.0.75.1", 50101);
         // <--
         
         // Request

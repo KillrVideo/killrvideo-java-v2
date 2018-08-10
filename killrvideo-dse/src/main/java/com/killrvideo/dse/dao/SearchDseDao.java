@@ -2,7 +2,6 @@ package com.killrvideo.dse.dao;
 
 import static com.killrvideo.core.utils.FutureUtils.asCompletableFuture;
 
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
@@ -15,6 +14,7 @@ import javax.annotation.PostConstruct;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Repository;
 
 import com.datastax.driver.core.BoundStatement;
@@ -41,14 +41,31 @@ public class SearchDseDao extends AbstractDseDao {
 
 	/** Logger for that class. */
     private static Logger LOGGER = LoggerFactory.getLogger(SearchDseDao.class);
-    
+   
     /** Mapper to ease queries. */
     protected Mapper < Video >  mapperVideo;
 
     /** Precompile statements to speed up queries. */
     private PreparedStatement findSuggestedTags;
+    
     private PreparedStatement findVideosByTags;
-    private Set<String> excludeConjunctions = new HashSet<String>();
+    
+    /**
+     * Create a set of sentence conjunctions and other "undesirable"
+     * words we will use later to exclude from search results.
+     * Had to use .split() below because of the following conversation:
+     * https://github.com/spring-projects/spring-boot/issues/501
+     */
+    @Value("#{'${killrvideo.search.ignoredWords}'.split(',')}")
+    private Set<String> ignoredWords = new HashSet<>();
+   
+    /**
+     * Wrap search queries with "paging":"driver" to dynamically enable
+     * paging to ensure we pull back all available results in the application.
+     * https://docs.datastax.com/en/dse/6.0/cql/cql/cql_using/search_index/cursorsDeepPaging.html#cursorsDeepPaging__using-paging-with-cql-solr-queries-solrquery-Rim2GsbY
+     */
+    final private String pagingDriverStart = "{\"q\":\"";
+    final private String pagingDriverEnd = "\", \"paging\":\"driver\"}";
     
     /**
      * Default constructor.
@@ -75,8 +92,9 @@ public class SearchDseDao extends AbstractDseDao {
         
         // Statement for tags
     	findSuggestedTags = dseSession.prepare(QueryBuilder
-                         .select("name", "tags").from(keyspaceVideo, tableNameVideo)
-                         .where(QueryBuilder.eq("solr_query", QueryBuilder.bindMarker())));
+                	        .select("name", "tags", "description")
+                            .from(keyspaceVideo, tableNameVideo)
+                            .where(QueryBuilder.eq("solr_query", QueryBuilder.bindMarker())));
         findSuggestedTags.setConsistencyLevel(ConsistencyLevel.LOCAL_ONE);
         
         // Statement for videos
@@ -84,10 +102,6 @@ public class SearchDseDao extends AbstractDseDao {
                  		 .select().all().from(keyspaceVideo, tableNameVideo)
                  		 .where(QueryBuilder.eq("solr_query", QueryBuilder.bindMarker())));
         findVideosByTags.setConsistencyLevel(ConsistencyLevel.LOCAL_ONE);
-        // List of excluded
-        excludeConjunctions = new HashSet<String>();;
-        excludeConjunctions.addAll(Arrays.asList("and","or","but","nor",
-        	"so","for","yet","after","as","till","to","the","at","in","not","of","this"));
     }
     
     /**
@@ -133,6 +147,7 @@ public class SearchDseDao extends AbstractDseDao {
      * https://docs.datastax.com/en/dse/5.1/dse-dev/datastax_enterprise/search/cursorsDeepPaging.html#cursorsDeepPaging__srchCursorCQL
      */
     private BoundStatement createStatementToQuerySuggestions(String query, int fetchSize) {
+        
         final StringBuilder solrQuery = new StringBuilder();
         solrQuery.append("{\"q\":\"search_suggestions:");
         solrQuery.append(query);
@@ -203,7 +218,7 @@ public class SearchDseDao extends AbstractDseDao {
             while (regexMatcher.find()) {
                 suggestionSet.add(regexMatcher.group().toLowerCase());
             }
-            suggestionSet.removeAll(excludeConjunctions);
+            suggestionSet.removeAll(ignoredWords);
     	}
     	 LOGGER.debug("TagSet resturned are {}", suggestionSet); 
     	return suggestionSet;
@@ -221,19 +236,40 @@ public class SearchDseDao extends AbstractDseDao {
      * if there are no tags for a given video as it is more likely to give us results.
      */
     private BoundStatement createStatementToSearchVideos(String query, int fetchSize, Optional<String> pagingState) {
-    	
-    	// Escaping special characters for query
-    	final String replaceFind = "\"";
-        final String replaceWith = "\\\"";
-        String requestQuery = query.replaceAll(replaceFind, Matcher.quoteReplacement(replaceWith));
+        LOGGER.debug("Start searching videos by name, tag, and description");
+        // Escaping special characters for query
+    	final String replaceFind = " ";
+        final String replaceWith = " AND ";
+        /**
+         * Perform a query using DSE search to find videos. Query the
+         * name, tags, and description columns in the videos table giving a boost to matches in the name and tags
+         * columns as opposed to the description column.
+         */
+        String requestQuery = query.trim()
+                                   .replaceAll(replaceFind, Matcher.quoteReplacement(replaceWith));
         
-        // Build SolQuery
-        final StringBuilder solrQuery = new StringBuilder();
-        solrQuery.append("{\"q\":\"{!edismax qf=\\\"name^2 tags^1 description\\\"}");
-        solrQuery.append(requestQuery);
-        solrQuery.append("\", \"paging\":\"driver\"}");
-        
-        // Binding and extra parameters
+        /**
+         * In this case we are using DSE Search to query across the name, tags, and
+         * description columns with a boost on name and tags.  The boost will put
+         * more priority on the name column, then tags, and finally description.
+         *
+         * Note that tags is a
+         * collection of tags per each row with no extra steps to include all data
+         * in the collection.  This is a more comprehensive search as
+         * we are not just looking at values within the tags column, but also looking
+         * across the other columns for similar occurrences.  This is especially helpful
+         * if there are no tags for a given video as it is more likely to give us results.
+         *
+         * Refer to the following documentation for a deeper look at term boosting:
+         * https://docs.datastax.com/en/dse/6.0/cql/cql/cql_using/search_index/advancedTerms.html
+         */
+        final StringBuilder solrQuery = new StringBuilder()
+                .append(pagingDriverStart)
+                .append("name:(").append(requestQuery).append(")^4 OR ")
+                .append("tags:(").append(requestQuery).append(")^2 OR ")
+                .append("description:(").append(requestQuery).append(")")
+                .append(pagingDriverEnd);
+         
         BoundStatement stmt = findVideosByTags.bind().setString("solr_query", solrQuery.toString());
         pagingState.ifPresent( x -> stmt.setPagingState(PagingState.fromString(x)));
         stmt.setFetchSize(fetchSize);

@@ -83,11 +83,11 @@ public class VideoCatalogGrpcService extends VideoCatalogServiceImplBase {
         // Building Response
         future.whenComplete((result, error) -> { 
             if (error != null ) {
-                helper.traceSuccess(LOGGER, "submitYouTubeVideo", starts);
+                helper.traceError(LOGGER, "submitYouTubeVideo", starts, error);
                 messagingDao.publishExceptionEvent(new ErrorEvent(grpcReq, error), error);
                 grpcResObserver.onError(Status.INTERNAL.withCause(error).asRuntimeException());
             } else {
-                helper.traceError(LOGGER, "submitYouTubeVideo", starts, error);
+                helper.traceSuccess(LOGGER, "submitYouTubeVideo", starts);
                 helper.publishSubmitVideoSuccess(video);
                 grpcResObserver.onNext(SubmitYouTubeVideoResponse.newBuilder().build());
                 grpcResObserver.onCompleted();

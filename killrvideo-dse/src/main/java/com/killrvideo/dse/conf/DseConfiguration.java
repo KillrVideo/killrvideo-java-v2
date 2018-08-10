@@ -1,14 +1,23 @@
 package com.killrvideo.dse.conf;
 
+import java.io.BufferedInputStream;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
+import java.security.KeyStore;
+import java.security.cert.CertificateException;
+import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
+
+import javax.net.ssl.TrustManagerFactory;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,6 +27,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import com.datastax.driver.core.AuthProvider;
+import com.datastax.driver.core.RemoteEndpointAwareNettySSLOptions;
 import com.datastax.driver.core.policies.AddressTranslator;
 import com.datastax.driver.dse.DseCluster.Builder;
 import com.datastax.driver.dse.DseSession;
@@ -37,6 +47,9 @@ import com.killrvideo.core.dao.EtcdDao;
 import com.killrvideo.dse.graph.KillrVideoTraversalSource;
 import com.killrvideo.dse.model.SchemaConstants;
 import com.killrvideo.dse.utils.BlobToStringCodec;
+
+import io.netty.handler.ssl.SslContext;
+import io.netty.handler.ssl.SslContextBuilder;
 
 /**
  * Connectivity to DSE (cassandra, graph, search, analytics).
@@ -69,7 +82,13 @@ public class DseConfiguration {
     
     @Value("${killrvideo.cassandra.delayBetweenTries: 2}")
     private int delayBetweenTries = 2;
-   
+    
+    @Value("${killrvideo.ssl.CACertFileLocation: cassandra.cert}")
+    private String sslCACertFileLocation;
+    
+    @Value("#{environment.KILLRVIDEO_ENABLE_SSL ?: false}")
+    public Optional < Boolean > dseEnableSSL;
+    
     @Autowired
     private EtcdDao etcdDao;
     
@@ -81,6 +100,7 @@ public class DseConfiguration {
          populateContactPoints(clusterConfig);
          populateAuthentication(clusterConfig);
          populateGraphOptions(clusterConfig);
+         populateSSL(clusterConfig);
          
          /* More options available with flags through QueryOptions 
          QueryOptions options = new QueryOptions();
@@ -116,7 +136,7 @@ public class DseConfiguration {
                   })
                  .onSuccess(s -> {   
                      long timeElapsed = System.currentTimeMillis() - top;
-                     LOGGER.info(" = Connection etablished to DSE Cluster in {} millis.", timeElapsed);})
+                     LOGGER.info("[OK] Connection etablished to DSE Cluster in {} millis.", timeElapsed);})
                  .execute(connectionToDse).getResult();
     }
     
@@ -224,7 +244,7 @@ public class DseConfiguration {
             AuthProvider cassandraAuthProvider = new DsePlainTextAuthProvider(dseUsername.get(), dsePassword.get());
             clusterConfig.withAuthProvider(cassandraAuthProvider);
             String obfuscatedPassword = new String(new char[dsePassword.get().length()]).replace("\0", "*");
-            LOGGER.info(" + Using supplied DSE username: '%s' and password: '%s' from environment variables", 
+            LOGGER.info(" + Using supplied DSE username: '{}' and password: '{}' from environment variables", 
                         dseUsername.get(), obfuscatedPassword);
         } else {
             LOGGER.info(" + Connection is not authenticated (no username/password)");
@@ -266,5 +286,52 @@ public class DseConfiguration {
         }
         return target;
     }
+    
+    /**
+     * If SSL is enabled use the supplied CA cert file to create
+     * an SSL context and use to configure our cluster.
+     *
+     * @param clusterConfig
+     *      current configuration
+     */
+    private void populateSSL(Builder clusterConfig) {
+        if (dseEnableSSL.isPresent() &&  dseEnableSSL.get()) {
+            LOGGER.info(" + SSL is enabled, using supplied SSL certificate: '{}'", sslCACertFileLocation);
+             try {
+                 // X509 Certificate
+                FileInputStream fis = new FileInputStream(sslCACertFileLocation);
+                X509Certificate caCert = (X509Certificate) CertificateFactory.getInstance("X.509")
+                        .generateCertificate(new BufferedInputStream(fis));
+                
+                // KeyStore
+                KeyStore ks = KeyStore.getInstance(KeyStore.getDefaultType());
+                ks.load(null, null);
+                ks.setCertificateEntry(Integer.toString(1), caCert);
+
+                // TrustStore
+                TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+                tmf.init(ks);
+                SslContext sslContext = SslContextBuilder.forClient().trustManager(tmf).build();
+                clusterConfig.withSSL(new RemoteEndpointAwareNettySSLOptions(sslContext));
+                
+             } catch (FileNotFoundException fne) {
+                 String errMsg = "SSL cert file not found. You must provide a valid certification file when using SSL encryption option.";
+                 LOGGER.error(errMsg, fne);
+                 throw new IllegalArgumentException(errMsg, fne);
+                 
+             } catch (CertificateException ce) {
+                String errCert = "Your CA certificate looks invalid. You must provide a valid certification file when using SSL encryption option.";
+                LOGGER.error(errCert, ce);
+                
+                throw new IllegalArgumentException(errCert, ce);
+             } catch (Exception e) {
+                String errSsl = "Exception in SSL configuration: ";
+                LOGGER.error(errSsl, e);
+                throw new IllegalArgumentException(errSsl, e);
+            }
+         } else {
+            LOGGER.info(" + SSL encryption is not enabled)");
+        }
+     }
    
 }

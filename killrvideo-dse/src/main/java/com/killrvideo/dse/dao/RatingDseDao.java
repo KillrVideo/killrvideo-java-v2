@@ -92,15 +92,13 @@ public class RatingDseDao extends AbstractDseDao {
         // Create Queries
         BoundStatement statement = updateRating.bind()
                 .setLong(VideoRating.COLUMN_RATING_TOTAL, rating)
-                .setUUID(VideoRating.COLUMN_VIDEOID, videoId);
+                .setUUID(VideoRating.COLUMN_VIDEOID,      videoId);
         
         VideoRatingByUser entity = new VideoRatingByUser(videoId, userId, rating);
         
         // Logging at DEBUG
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("Rating {} on video {} for user {}", rating, videoId, userId);
-            LOGGER.debug(" + executing:", statement.preparedStatement().getQueryString());
-            LOGGER.debug(" + executing:", ((BoundStatement) mapperVideoRatingByUser.saveQuery(entity)).preparedStatement().getQueryString());
         }
         
         /**

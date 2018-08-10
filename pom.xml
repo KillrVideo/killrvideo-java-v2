@@ -40,21 +40,15 @@
 	<properties>
 
 		<!-- DataStax Java-Driver -->
-		<dse.version>1.6.6</dse.version>
+		<dse.version>1.6.8</dse.version>
 
 		<!-- ThirdParty library -->
-		<spring.version>5.0.5.RELEASE</spring.version>
-		<!-- <spring-boot.version>2.0.1.RELEASE</spring-boot.version>-->
-		<spring-boot.version>1.5.12.RELEASE</spring-boot.version>
+		<spring.version>5.0.8.RELEASE</spring.version>
+		<spring-boot.version>2.0.3.RELEASE</spring-boot.version>
 		
-		<!-- API -->
-		<graphql-java.version>7.0</graphql-java.version>
-		<graphql-java-servlet.version>4.7.0</graphql-java-servlet.version>
-
-   		<!-- Validation -->
+   		 <!-- Validation -->
         <javax.el.api.version>3.0.0</javax.el.api.version>
-        <javax.validation>1.1.1</javax.validation>
-        <validator.version>6.0.8.Final</validator.version>
+        <validator.version>6.0.11.Final</validator.version>
         <validation.api.version>2.0.1.Final</validation.api.version>
         
 		<!-- GRPC -->
@@ -68,8 +62,8 @@
 		<cassandra-unit.version>3.3.0.2</cassandra-unit.version>
 		<cassandra-all.version>3.11.2</cassandra-all.version>
 		<junit4.version>4.12</junit4.version>
-		<junit-platform.version>1.1.0</junit-platform.version>
-		<junit-jupiter.version>5.1.0</junit-jupiter.version>
+		<junit-platform.version>1.2.0</junit-platform.version>
+		<junit-jupiter.version>5.2.0</junit-jupiter.version>
 		<cucumber.version>1.2.5</cucumber.version>
 		<mockito.version>1.9.5</mockito.version>
         <assertj-core.version>1.7.0</assertj-core.version>
@@ -80,7 +74,7 @@
 		<commons-collections.version>4.1</commons-collections.version>
 		<logback.version>1.2.3</logback.version>
 		<etcd4j.version>1.2</etcd4j.version>
-		<retry4j.version>0.12.0</retry4j.version>
+		<retry4j.version>0.14.0</retry4j.version>
 		<guava.version>19.0</guava.version>
 		<camel-spring-boot.version>2.21.0</camel-spring-boot.version>
 		<ff4j.version>1.7.1</ff4j.version>
@@ -109,12 +103,6 @@
 				<groupId>com.datastax.dse</groupId>
 				<artifactId>dse-java-driver-core</artifactId>
 				<version>${dse.version}</version>
-				<exclusions>
-					<exclusion>
-						<groupId>io.netty</groupId>
-						<artifactId>netty-handler</artifactId>
-					</exclusion>
-				</exclusions>
 			</dependency>
 			<dependency>
 				<groupId>com.datastax.dse</groupId>
@@ -131,45 +119,33 @@
 				<artifactId>dse-java-driver-graph</artifactId>
 				<version>${dse.version}</version>
 			</dependency>
-
-			<!-- JSR -->
-			<dependency>
-				<groupId>javax.validation</groupId>
-				<artifactId>validation-api</artifactId>
-				<version>${validation.api.version}</version>
-			</dependency>
-			<dependency>
-				<groupId>org.hibernate</groupId>
-				<artifactId>hibernate-validator</artifactId>
-				<version>${validator.version}</version>
-			</dependency>
-			<dependency>
-				<groupId>org.glassfish</groupId>
-				<artifactId>javax.el</artifactId>
-				<version>${javax.el.api.version}</version>
-			</dependency>
-			<dependency>
-				<groupId>javax.el</groupId>
-				<artifactId>javax.el-api</artifactId>
-				<version>${javax.el.api.version}</version>
-			</dependency>
-			<dependency>
-				<groupId>javax.activation</groupId>
-				<artifactId>activation</artifactId>
-				<version>${javax.validation}</version>
-			</dependency>
-
-			<!-- API -->
-			<dependency>
-				<groupId>com.graphql-java</groupId>
-				<artifactId>graphql-java</artifactId>
-				<version>${graphql-java.version}</version>
-			</dependency>
-			<dependency>
-				<groupId>com.graphql-java</groupId>
-				<artifactId>graphql-java-servlet</artifactId>
-				<version>${graphql-java-servlet.version}</version>
-			</dependency>
+	 		
+	 		<!-- Bean Validation -->
+	        <dependency>
+	            <groupId>javax.validation</groupId>
+	            <artifactId>validation-api</artifactId>
+	            <version>${validation.api.version}</version>
+	        </dependency>
+	        <dependency>
+	            <groupId>org.hibernate</groupId>
+	            <artifactId>hibernate-validator</artifactId>
+	            <version>${validator.version}</version>
+	        </dependency>
+	        <dependency>
+	            <groupId>org.hibernate.validator</groupId>
+	            <artifactId>hibernate-validator</artifactId>
+	            <version>${validator.version}</version>
+	        </dependency>
+	         <dependency>
+	   		   <groupId>org.glassfish</groupId>
+	   		   <artifactId>javax.el</artifactId>
+	   		   <version>${javax.el.api.version}</version>
+		   </dependency>
+	        <dependency>
+	            <groupId>javax.el</groupId>
+	            <artifactId>javax.el-api</artifactId>
+	            <version>${javax.el.api.version}</version>
+	        </dependency>
 
 			<!-- GRPC -->
 			<dependency>
@@ -262,30 +238,7 @@
 				<version>${logback.version}</version>
 			</dependency>
 			
-			 <!-- Bean Validation -->
-	        <dependency>
-	            <groupId>javax.validation</groupId>
-	            <artifactId>validation-api</artifactId>
-	            <version>${validation.api.version}</version>
-	        </dependency>
-	        <dependency>
-	            <groupId>org.hibernate</groupId>
-	            <artifactId>hibernate-validator</artifactId>
-	            <version>${validator.version}</version>
-	        </dependency>
-	         <dependency>
-	   		   <groupId>org.glassfish</groupId>
-	   		   <artifactId>javax.el</artifactId>
-	   		   <version>${javax.el.api.version}</version>
-		   </dependency>
-	        <dependency>
-	            <groupId>javax.el</groupId>
-	            <artifactId>javax.el-api</artifactId>
-	            <version>${javax.el.api.version}</version>
-	        </dependency>
-
 			<!-- Tests -->
-			
 			<dependency>
 				<groupId>junit</groupId>
 				<artifactId>junit</artifactId>
@@ -296,6 +249,7 @@
 				<artifactId>spring-test</artifactId>
 				<version>${spring.version}</version>
 			</dependency>
+			
 			<!-- Cassandra Unit -->
 			<dependency>
 				<groupId>org.cassandraunit</groupId>
@@ -347,6 +301,7 @@
 	        <dependency>
 	            <groupId>info.cukes</groupId>
 	            <artifactId>cucumber-spring</artifactId>
+	            <version>${cucumber.version}</version>
 	            <scope>test</scope>
 	        </dependency>
 	        <dependency>

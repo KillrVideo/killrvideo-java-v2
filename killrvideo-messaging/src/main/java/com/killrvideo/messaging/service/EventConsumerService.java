@@ -1,5 +1,7 @@
 package com.killrvideo.messaging.service;
 
+import javax.annotation.PostConstruct;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,6 +12,7 @@ import com.killrvideo.dse.dao.SuggestedVideosDseDao;
 import com.killrvideo.dse.model.User;
 import com.killrvideo.dse.model.Video;
 import com.killrvideo.dse.model.VideoRatingByUser;
+import com.killrvideo.messaging.MessagingDao;
 
 @Service
 public class EventConsumerService {
@@ -20,6 +23,14 @@ public class EventConsumerService {
     @Autowired
     private SuggestedVideosDseDao suggestedVideoDao;
     
+    @Autowired
+    private MessagingDao messagingDao;
+    
+    @PostConstruct
+    public void startListening() {
+        messagingDao.register(this);
+    }
+    
     /**
      * Subscription on guava BUS.
      *
@@ -27,8 +38,10 @@ public class EventConsumerService {
      *      new video added
      */
     @Subscribe
-    public void consumeNewVideoEvent(Video youTubeVideoAdded) {
-        LOGGER.debug("New video event: Updating Recommendation Graph");
+    public void onYouTubeVideoCreation(Video youTubeVideoAdded) {
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("[NewVideoEvent] Processing for video {} ", youTubeVideoAdded.getVideoid());
+        }
         suggestedVideoDao.updateGraphNewVideo(youTubeVideoAdded);
     }
 
@@ -43,16 +56,20 @@ public class EventConsumerService {
      *      new user added
      */
     @Subscribe
-    public void consumeNewUserEvent(User userAdded) {
+    public void onUserCreation(User userAdded) {
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("[NewUserEvent] Processing for user {} ", userAdded.getUserid());
+        }
         LOGGER.debug("New user event: Updating Recommendation Graph");
         suggestedVideoDao.updateGraphNewUser(userAdded);
-        
     }
     
     @Subscribe
-    public void consumeNewVideoRatingEvent(VideoRatingByUser videoRating) {
-        LOGGER.debug("New vide rating event: Updating Recommendation Graph");
+    public void onVideoRating(VideoRatingByUser videoRating) {
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("[NewRatingEvent] Processing video {} user {} rating {}", 
+                    videoRating.getVideoid(), videoRating.getUserid(), videoRating.getRating());
+        }
         suggestedVideoDao.updateGraphNewUserRating(videoRating);
-        
     }
 }

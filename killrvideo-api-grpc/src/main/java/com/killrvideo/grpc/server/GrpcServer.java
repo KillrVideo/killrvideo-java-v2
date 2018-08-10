@@ -136,7 +136,7 @@ public class GrpcServer {
 
         // Start Grpc listener
         server.start();
-        LOGGER.info("Grpc Server started on port: '{}'", grpcPort);
+        LOGGER.info("[OK] Grpc Server started on port: '{}'", grpcPort);
        
         // Initialize Event bus
         messagingDao.register(errorHandler);
@@ -148,7 +148,7 @@ public class GrpcServer {
                 commentService, ratingService, searchService, 
                 statisticsService, suggestedVideosGrpcService, 
                 videoCatalogService, uploadGrpcService, userService);
-        LOGGER.info(" = Services now registered in ETCD");
+        LOGGER.info("[OK] Services now registered in ETCD");
     }
 
     @PreDestroy
