@@ -4,7 +4,6 @@ import static java.util.UUID.fromString;
 
 import java.time.Instant;
 
-import org.ff4j.FF4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,16 +34,11 @@ import killrvideo.comments.CommentsServiceOuterClass.GetVideoCommentsResponse;
  */
 @Service
 public class CommentsGrpcService extends CommentsServiceImplBase {
-    
-    /** Feature Toggle.*/
-    private static final String ASYNC_FLAG = "asyncCommentService";
-    
+     
     /** Loger for that class. */
     private static Logger LOGGER = LoggerFactory.getLogger(CommentsGrpcService.class);
     
-    @Autowired
-    private FF4j ff4j;
-    
+    /** Wrapper for GRPC mappings and validations. */
     @Autowired
     private CommentGrpcHelper helper;
     
@@ -76,42 +70,19 @@ public class CommentsGrpcService extends CommentsServiceImplBase {
             LOGGER.debug("Insert comment on video {} for user {} : {}",  q.getVideoid(), q.getUserid(), q);
         }
         
-        /** 
-         * As reference application we propose 2 implementations SYNC and ASYNC.
-         * => Pick the one relevant to your use cases
-         * => To change behaviour of the killrVideo App, change the value in application.yaml file.
-         **/ 
-        if (ff4j.check(ASYNC_FLAG)) {
-            
-            // ASYNCHRONOUS works with ComputableFuture
-            dseCommentDao.insertCommentAsync(q).whenComplete((result, error) -> {
-                if (error != null ) {
-                    helper.traceError(LOGGER, "commentOnVideo", starts, error);
-                    messagingDao.publishExceptionEvent(new ErrorEvent(grpcReq, error), error);
-                    grpcResObserver.onError(Status.INTERNAL.withCause(error).asRuntimeException());
-                } else {
-                    helper.traceSuccess(LOGGER, "commentOnVideo", starts);
-                    helper.publishCommentCreateEvent(grpcReq, starts);
-                    grpcResObserver.onNext(CommentOnVideoResponse.newBuilder().build());
-                    grpcResObserver.onCompleted();
-                }
-            });
-            
-        } else {
-            
-            // SYNCHRONOUS with the classic try/catch
-            try {
-                dseCommentDao.insertComment(q);
+        // ASYNCHRONOUS works with ComputableFuture
+        dseCommentDao.insertCommentAsync(q).whenComplete((result, error) -> {
+            if (error != null ) {
+                helper.traceError(LOGGER, "commentOnVideo", starts, error);
+                messagingDao.publishExceptionEvent(new ErrorEvent(grpcReq, error), error);
+                grpcResObserver.onError(Status.INTERNAL.withCause(error).asRuntimeException());
+            } else {
                 helper.traceSuccess(LOGGER, "commentOnVideo", starts);
                 helper.publishCommentCreateEvent(grpcReq, starts);
                 grpcResObserver.onNext(CommentOnVideoResponse.newBuilder().build());
                 grpcResObserver.onCompleted();
-            } catch(Throwable t) {
-                helper.traceError(LOGGER, "commentOnVideo", starts, t);
-                messagingDao.publishExceptionEvent(grpcReq, t);
-                grpcResObserver.onError(t);
             }
-        }
+         });
     }
     
     /** {@inheritDoc} */
@@ -126,39 +97,19 @@ public class CommentsGrpcService extends CommentsServiceImplBase {
         
         // Mapping GRPC => Domain (Dao) : Dedicated bean creating for flexibility
         QueryCommentByVideo query = helper.mapFromGrpcVideoCommentToDseQuery(grpcReq);
-        
-        /** 
-         * As reference application we propose 2 implementations SYNC and ASYNC.
-         * => Pick the one relevant to your use cases
-         * => To change behaviour of the killrVideo App, change the value in application.yaml file.
-         **/ 
-        if (ff4j.check(ASYNC_FLAG)) {
-            
-            // ASYNCHRONOUS works with ComputableFuture
-            dseCommentDao.findCommentsByVideosIdAsync(query).whenComplete((result, error) -> {
-                if (result != null) {
-                    helper.traceSuccess(LOGGER, "getVideoComments", starts);
-                    responseObserver.onNext(helper.mapFromDseVideoCommentToGrpcResponse(result));
-                    responseObserver.onCompleted();
-                } else if (error != null){
-                    helper.traceError(LOGGER,"getVideoComments", starts, error);
-                    messagingDao.publishExceptionEvent(grpcReq, error);
-                    responseObserver.onError(error);
-                }
-            });
-            
-        } else {
-           // SYNCHRONOUS with the classic try/catch
-            try {
+             
+        // ASYNCHRONOUS works with ComputableFuture
+        dseCommentDao.findCommentsByVideosIdAsync(query).whenComplete((result, error) -> {
+            if (result != null) {
                 helper.traceSuccess(LOGGER, "getVideoComments", starts);
-                responseObserver.onNext(helper.mapFromDseVideoCommentToGrpcResponse(dseCommentDao.findCommentsByVideoId(query)));
+                responseObserver.onNext(helper.mapFromDseVideoCommentToGrpcResponse(result));
                 responseObserver.onCompleted();
-            } catch(Throwable t) {
-                helper.traceError(LOGGER, "getVideoComments", starts, t);
-                messagingDao.publishExceptionEvent(grpcReq, t);
-                responseObserver.onError(t);
+            } else if (error != null){
+                helper.traceError(LOGGER,"getVideoComments", starts, error);
+                messagingDao.publishExceptionEvent(grpcReq, error);
+                responseObserver.onError(error);
             }
-        }
+        });
     }
     
     /** {@inheritDoc} */
@@ -176,39 +127,19 @@ public class CommentsGrpcService extends CommentsServiceImplBase {
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("Listing comment for user {}",  query.getUserId());
         }
-        
-        /** 
-         * As reference application we propose 2 implementations SYNC and ASYNC.
-         * => Pick the one relevant to your use cases
-         * => To change behaviour of the killrVideo App, change the value in application.yaml file.
-         **/ 
-        if (ff4j.check(ASYNC_FLAG)) {
-        
-            // ASYNCHRONOUS works with ComputableFuture
-            dseCommentDao.findCommentsByUserIdAsync(query).whenComplete((result, error) -> {
-                if (result != null) {
-                    helper.traceSuccess(LOGGER, "getUserComments", starts);
-                    responseObserver.onNext(helper.mapFromDseUserCommentToGrpcResponse(result));
-                    responseObserver.onCompleted();
-                } else if (error != null){
-                    helper.traceError(LOGGER,"getUserComments", starts, error);
-                    messagingDao.publishExceptionEvent(grpcReq, error);
-                    responseObserver.onError(error);
-                }
-            });
-            
-        } else {
-            // SYNCHRONOUS with the classic try/catch
-            try {
+       
+        // ASYNCHRONOUS works with ComputableFuture
+        dseCommentDao.findCommentsByUserIdAsync(query).whenComplete((result, error) -> {
+            if (result != null) {
                 helper.traceSuccess(LOGGER, "getUserComments", starts);
-                responseObserver.onNext(helper.mapFromDseUserCommentToGrpcResponse(dseCommentDao.findCommentsByUserId(query)));
+                responseObserver.onNext(helper.mapFromDseUserCommentToGrpcResponse(result));
                 responseObserver.onCompleted();
-            } catch(Throwable t) {
-                helper.traceError(LOGGER,"getUserComments", starts, t);
-                messagingDao.publishExceptionEvent(grpcReq, t);
-                responseObserver.onError(t);
+            } else if (error != null){
+                helper.traceError(LOGGER,"getUserComments", starts, error);
+                messagingDao.publishExceptionEvent(grpcReq, error);
+                responseObserver.onError(error);
             }
-        }
+        });
     }
 
 }

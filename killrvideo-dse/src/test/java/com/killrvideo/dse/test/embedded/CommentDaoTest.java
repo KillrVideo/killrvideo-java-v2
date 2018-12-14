@@ -56,7 +56,7 @@ public class CommentDaoTest extends AbstractTestEmbedded {
         QueryCommentByUser query = new QueryCommentByUser(randomUserId);
         Assert.assertEquals(0, commentDao.findCommentsByUserId(query).getResults().size());
         // When
-        int  testData = new Double(10 * Math.random()).intValue();
+        int  testData = Double.valueOf(10 * Math.random()).intValue();
         for(int idx =0;idx<testData;idx++) {
             Comment comment = new Comment("Foo bar.." + idx);
             comment.setCommentid(UUIDs.timeBased());
@@ -76,7 +76,7 @@ public class CommentDaoTest extends AbstractTestEmbedded {
         QueryCommentByVideo query = new QueryCommentByVideo(randomVideoId);
         Assert.assertEquals(0, commentDao.findCommentsByVideoId(query).getResults().size());
         // When
-        int  testData = new Double(10 * Math.random()).intValue();
+        int  testData = Double.valueOf(10 * Math.random()).intValue();
         for(int idx =0;idx<testData;idx++) {
             Comment comment = new Comment("Foo bar.." + idx);
             comment.setCommentid(UUIDs.timeBased());

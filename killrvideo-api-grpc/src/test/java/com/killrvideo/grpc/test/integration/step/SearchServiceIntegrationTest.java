@@ -80,7 +80,7 @@ public class SearchServiceIntegrationTest extends AbstractSteps {
             return grpcClient.getSearchService().searchVideos(request).getVideosList().size();
         };
         RetryConfig config = new RetryConfigBuilder()
-                .retryOnReturnValue(new Integer(0))
+                .retryOnReturnValue(Integer.valueOf(0))
                 .failOnAnyException()
                 .withMaxNumberOfTries(10)
                 .withDelayBetweenTries(2, ChronoUnit.SECONDS)
@@ -128,7 +128,7 @@ public class SearchServiceIntegrationTest extends AbstractSteps {
             return grpcClient.getSearchService().getQuerySuggestions(request).getSuggestionsList().size();
         };
         RetryConfig config = new RetryConfigBuilder()
-                .retryOnReturnValue(new Integer(0))
+                .retryOnReturnValue(Integer.valueOf(0))
                 .failOnAnyException()
                 .withMaxNumberOfTries(10)
                 .withDelayBetweenTries(2, ChronoUnit.SECONDS)

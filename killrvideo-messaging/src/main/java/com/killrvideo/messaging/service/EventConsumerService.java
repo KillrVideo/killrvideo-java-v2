@@ -60,7 +60,6 @@ public class EventConsumerService {
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("[NewUserEvent] Processing for user {} ", userAdded.getUserid());
         }
-        LOGGER.debug("New user event: Updating Recommendation Graph");
         suggestedVideoDao.updateGraphNewUser(userAdded);
     }
     

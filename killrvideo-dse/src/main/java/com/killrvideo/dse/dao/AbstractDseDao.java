@@ -32,7 +32,7 @@ public abstract class AbstractDseDao implements SchemaConstants {
     protected MappingManager mappingManager;
     
     /**
-     * Prepariation of statement before queries allow signifiant performance improvements.
+     * Preparation of statements before firing queries allow signifiant performance improvements.
      * This can only be done it the statement is 'static', mean the number of parameter
      * to bind() is fixed. If not the case you can find sample in method buildStatement*() in this class.
      */

@@ -14,15 +14,39 @@
 		<version>6</version>
 	</parent>
 
-	<dependencies>
+	<dependencies>	
+		
+		<!-- Most used for etcd API v2 -->
 		<dependency>
-			<groupId>com.evanlennick</groupId>
-			<artifactId>retry4j</artifactId>
+  			<groupId>org.mousio</groupId>
+  			<artifactId>etcd4j</artifactId>
+  			<version>2.15.0</version>
 		</dependency>
+		<!-- Reference implementation for ETCD v3 -->
+		<dependency>
+    		<groupId>com.coreos</groupId>
+    		<artifactId>jetcd-core</artifactId>
+    		<version>0.0.2</version>
+		</dependency>
+		<!-- Deprecated from 2015 -->
 		<dependency>
 			<groupId>com.xqbase</groupId>
 			<artifactId>etcd4j</artifactId>
 		</dependency>
+		
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-context</artifactId>
+		</dependency>
+		<dependency>
+        	<groupId>javax.annotation</groupId>
+        	<artifactId>javax.annotation-api</artifactId>
+    	</dependency>  
+		<dependency>
+			<groupId>com.evanlennick</groupId>
+			<artifactId>retry4j</artifactId>
+		</dependency>
+		
 		<dependency>
 			<groupId>org.apache.commons</groupId>
 			<artifactId>commons-lang3</artifactId>
@@ -31,10 +55,7 @@
 			<groupId>com.google.guava</groupId>
 			<artifactId>guava</artifactId>
 		</dependency>
-		<dependency>
-			<groupId>org.springframework</groupId>
-			<artifactId>spring-context</artifactId>
-		</dependency>
+		
 		<dependency>
 			<groupId>ch.qos.logback</groupId>
 			<artifactId>logback-classic</artifactId>
@@ -59,11 +80,6 @@
 			<groupId>javax.el</groupId>
 			<artifactId>javax.el-api</artifactId>
 		</dependency>
-		<dependency>
-			<groupId>org.ff4j</groupId>
-			<artifactId>ff4j-core</artifactId>
-		</dependency>
-
 	</dependencies>
 
 </project>

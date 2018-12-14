@@ -31,7 +31,7 @@ public class MessagingDao {
         }
     }
     
-     /**
+    /**
      * Publish error Message.
      *
      * @param request
@@ -40,7 +40,7 @@ public class MessagingDao {
      *      raised exception during treatment
      */
     public void publishExceptionEvent(Object request, Throwable error) {
-        LOGGER.error("Exception commenting on video {} }", error);
+        LOGGER.error("Exception commenting on video {} ", error);
         eventBus.post(new ErrorEvent(request, error));
     }
     

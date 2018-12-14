@@ -77,6 +77,7 @@ public class AbstractSteps {
         DseUtils.truncate(dseSession, "latest_videos");
         DseUtils.truncate(dseSession, "videos_by_tag");
         DseUtils.truncate(dseSession, "tags_by_letter");
+        
     }
     
     @SuppressWarnings("serial")

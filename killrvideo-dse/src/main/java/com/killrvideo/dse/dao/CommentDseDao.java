@@ -85,7 +85,7 @@ public class CommentDseDao extends AbstractDseDao {
     /**
      * Cassandra and DSE Session are stateless. For each request a coordinator is chosen
      * and execute query against the cluster. The Driver is stateful, it has to maintain some
-     * network connections pool, here we properly cleanu things.
+     * network connections pool, here we properly cleanup things.
      * 
      * @throws Exception
      *      error on cleanup.

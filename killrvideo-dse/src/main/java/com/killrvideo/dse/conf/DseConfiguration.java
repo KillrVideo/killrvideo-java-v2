@@ -86,8 +86,8 @@ public class DseConfiguration {
     @Value("${killrvideo.ssl.CACertFileLocation: cassandra.cert}")
     private String sslCACertFileLocation;
     
-    @Value("#{environment.KILLRVIDEO_ENABLE_SSL ?: false}")
-    public Optional < Boolean > dseEnableSSL;
+    @Value("${killrvideo.ssl.enable: false}")
+    public boolean dseEnableSSL = false;
     
     @Autowired
     private EtcdDao etcdDao;
@@ -107,10 +107,11 @@ public class DseConfiguration {
          options.setConsistencyLevel(ConsistencyLevel.QUORUM);
          options.setSerialConsistencyLevel(ConsistencyLevel.LOCAL_SERIAL);
          clusterConfig.withQueryOptions(options);
-         clusterConfig.withoutJMXReporting();
          clusterConfig.withoutMetrics();
          clusterConfig.withReconnectionPolicy(new ConstantReconnectionPolicy(2000));
          */
+         // Required 
+         clusterConfig.withoutJMXReporting();
          clusterConfig.getConfiguration().getCodecRegistry().register(new BlobToStringCodec());
          
          final AtomicInteger atomicCount = new AtomicInteger(1);
@@ -295,7 +296,7 @@ public class DseConfiguration {
      *      current configuration
      */
     private void populateSSL(Builder clusterConfig) {
-        if (dseEnableSSL.isPresent() &&  dseEnableSSL.get()) {
+        if (dseEnableSSL) {
             LOGGER.info(" + SSL is enabled, using supplied SSL certificate: '{}'", sslCACertFileLocation);
              try {
                  // X509 Certificate
