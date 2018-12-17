@@ -1,7 +1,5 @@
 package com.killrvideo.dse.dao;
 
-import static com.killrvideo.core.utils.FutureUtils.asCompletableFuture;
-
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
@@ -28,6 +26,7 @@ import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.dse.DseSession;
 import com.datastax.driver.mapping.Mapper;
 import com.google.common.reflect.TypeToken;
+import com.killrvideo.core.utils.FutureUtils;
 import com.killrvideo.dse.dao.dto.ResultListPage;
 import com.killrvideo.dse.model.Video;
 
@@ -115,7 +114,7 @@ public class SearchDseDao extends AbstractDseDao {
      * https://docs.datastax.com/en/dse/5.1/dse-dev/datastax_enterprise/search/cursorsDeepPaging.html#cursorsDeepPaging__srchCursorCQL
      */
     public CompletableFuture < ResultListPage<Video> > searchVideosAsync(String query, int fetchSize, Optional<String> pagingState) {
-    	return asCompletableFuture(dseSession.executeAsync(
+    	return FutureUtils.asCompletableFuture(dseSession.executeAsync(
     	        createStatementToSearchVideos(query, fetchSize, pagingState)))
     	        .thenApply(rs -> new ResultListPage<Video>(rs, mapperVideo));
     }
@@ -185,7 +184,7 @@ public class SearchDseDao extends AbstractDseDao {
     public CompletableFuture < TreeSet< String > > getQuerySuggestionsAsync(String query, int fetchSize) {
     	BoundStatement stmt = createStatementToQuerySuggestions(query, fetchSize);
         ResultSetFuture resultSetFuture = dseSession.executeAsync(stmt);
-        return asCompletableFuture(resultSetFuture).thenApplyAsync(rs -> mapTagSet(rs, query));
+        return FutureUtils.asCompletableFuture(resultSetFuture).thenApplyAsync(rs -> mapTagSet(rs, query));
     }
      
     /**

@@ -5,16 +5,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Arrays;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Collectors;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.datastax.driver.core.Row;
 import com.killrvideo.grpc.test.integration.dto.CucumberVideoDetails;
@@ -43,40 +36,15 @@ import killrvideo.video_catalog.VideoCatalogServiceOuterClass.VideoPreview;
  * @author DataStax evangelist team.
  */
 public class VideoCatalogServiceSteps extends AbstractSteps {
-
-    /** Logger for the class. */
-    private static Logger LOGGER = LoggerFactory.getLogger(VideoCatalogServiceSteps.class);
-    
-    /** Initialization flag. */
-    private static AtomicReference<Boolean> SHOULD_CHECK_SERVICE= new AtomicReference<>(true);
-
-    @SuppressWarnings("serial")
-    public static final Map<String, VideoNameById> VIDEOS = new HashMap<String, VideoNameById>() {
-        {
-            put("video1", new VideoNameById(UUID.randomUUID(), "b-wing-ucs.mp4"));
-            put("video2", new VideoNameById(UUID.randomUUID(), "y-wing-ucs.mp4"));
-            put("video3", new VideoNameById(UUID.randomUUID(), "x-wing-ucs.mp4"));
-            put("video4", new VideoNameById(UUID.randomUUID(), "tie-fighter-ucs.mp4"));
-            put("video5", new VideoNameById(UUID.randomUUID(), "mil-falcon-ucs.mp4"));
-        }
-    };
-
-    public static final Map<UUID, String> VIDEOS_BY_ID = 
-            VIDEOS.entrySet().stream().collect(Collectors.toMap(x -> x.getValue().id, Map.Entry::getKey));
-
+   
     @Before("@video_scenarios")
     public void init() {
-        if (SHOULD_CHECK_SERVICE.get()) {
-            etcdDao.read("/killrvideo/services/" + VIDEO_CATALOG_SERVICE_NAME, true);
-        }
-        LOGGER.info("Truncating users & videos tables BEFORE executing tests");
-        cleanUpUserAndVideoTables();
+       truncateAllTablesFromKillrVideoKeyspace();
     }
 
     @After("@video_scenarios")
     public void cleanup() {
-        LOGGER.info("Truncating users & videos tables AFTER executing tests");
-        cleanUpUserAndVideoTables();
+        truncateAllTablesFromKillrVideoKeyspace();
     }
     
     @When("^(user\\d) submit Youtube videos:$")
@@ -88,8 +56,8 @@ public class VideoCatalogServiceSteps extends AbstractSteps {
             final SubmitYouTubeVideoRequest request = SubmitYouTubeVideoRequest
                     .newBuilder()
                     .setName(video.name)
-                    .setVideoId(GrpcMapper.uuidToUuid(VIDEOS.get(video.id).id))
-                    .setUserId(GrpcMapper.uuidToUuid(USERS.get(user)))
+                    .setVideoId(GrpcMapper.uuidToUuid(testDatasetVideos.get(video.id).id))
+                    .setUserId(GrpcMapper.uuidToUuid(testDatasetUsers.get(user)))
                     .setDescription(video.description)
                     .setYouTubeVideoId(video.url)
                     .addAllTags(Arrays.asList(video.tags.split(",")))
@@ -101,8 +69,8 @@ public class VideoCatalogServiceSteps extends AbstractSteps {
     
     @Then("I can retrieve (video\\d) by id")
     public void getVideoById(String video) {
-        assertThat(VIDEOS).as("%s is unknown, please specify videoXXX where XXX is a digit").containsKey(video);
-        final VideoNameById videoNameById = VIDEOS.get(video);
+        assertThat(testDatasetVideos).as("%s is unknown, please specify videoXXX where XXX is a digit").containsKey(video);
+        final VideoNameById videoNameById = testDatasetVideos.get(video);
 
         GetVideoRequest request = GetVideoRequest
                 .newBuilder()
@@ -124,10 +92,10 @@ public class VideoCatalogServiceSteps extends AbstractSteps {
     public void getVideosPreview(List<String> expectedVideos) {
         final GetVideoPreviewsRequest.Builder builder = GetVideoPreviewsRequest.newBuilder();
         for (String video : expectedVideos) {
-            assertThat(VIDEOS)
+            assertThat(testDatasetVideos)
                     .as("%s is unknown, please specify videoXXX where XXX is a digit")
                     .containsKey(video);
-            builder.addVideoIds(GrpcMapper.uuidToUuid(VIDEOS.get(video).id));
+            builder.addVideoIds(GrpcMapper.uuidToUuid(testDatasetVideos.get(video).id));
         }
 
         final GetVideoPreviewsResponse response = grpcClient.getVideoCatalogService().getVideoPreviews(builder.build());
@@ -144,13 +112,13 @@ public class VideoCatalogServiceSteps extends AbstractSteps {
 
         assertThat(response.getVideoPreviewsList().stream().map(VideoPreview::getName).collect(toList()))
                 .as("Cannot get previews for %s", String.join(", ", expectedVideos))
-                .containsExactly(expectedVideos.stream().map(x -> VIDEOS.get(x).name).collect(toList()).toArray(new String[expectedVideoCount]));
+                .containsExactly(expectedVideos.stream().map(x -> testDatasetVideos.get(x).name).collect(toList()).toArray(new String[expectedVideoCount]));
     }
 
     @Then("latest videos preview contains: (.*)")
     public void getLatestVideosPreview(List<String> expectedVideos) {
         final int expectedVideoCount = expectedVideos.size();
-        assertThat(VIDEOS)
+        assertThat(testDatasetVideos)
                 .as("%s is unknown, please specify videoXXX where XXX is a digit")
                 .containsKeys(expectedVideos.toArray(new String[expectedVideoCount]));
 
@@ -171,7 +139,7 @@ public class VideoCatalogServiceSteps extends AbstractSteps {
 
         assertThat(response.getVideoPreviewsList().stream().map(VideoPreview::getName).collect(toList()))
                 .as("Cannot get latest videos preview for %s", String.join(" ,", expectedVideos))
-                .containsExactly(expectedVideos.stream().map(x -> VIDEOS.get(x).name).collect(toList()).toArray(new String[expectedVideoCount]));
+                .containsExactly(expectedVideos.stream().map(x -> testDatasetVideos.get(x).name).collect(toList()).toArray(new String[expectedVideoCount]));
     }
 
     @Then("(user\\d) videos preview contains: (.*)")
@@ -179,17 +147,17 @@ public class VideoCatalogServiceSteps extends AbstractSteps {
 
         final int expectedVideoCount = expectedVideos.size();
 
-        assertThat(VIDEOS)
+        assertThat(testDatasetVideos)
                 .as("%s is unknown, please specify videoXXX where XXX is a digit")
                 .containsKeys(expectedVideos.toArray(new String[expectedVideoCount]));
 
-        assertThat(USERS)
+        assertThat(testDatasetUsers)
                 .as("%s is unknown, please specify userXXX where XXX is a digit")
                 .containsKey(user);
 
         GetUserVideoPreviewsRequest request = GetUserVideoPreviewsRequest
                 .newBuilder()
-                .setUserId(GrpcMapper.uuidToUuid(USERS.get(user)))
+                .setUserId(GrpcMapper.uuidToUuid(testDatasetUsers.get(user)))
                 .setPageSize(100)
                 .build();
 
@@ -205,16 +173,16 @@ public class VideoCatalogServiceSteps extends AbstractSteps {
 
         assertThat(response.getVideoPreviewsList().stream().map(VideoPreview::getName).collect(toList()))
                 .as("Cannot get latest videos preview for %s", String.join(" ,", expectedVideos))
-                .containsExactly(expectedVideos.stream().map(x -> VIDEOS.get(x).name).collect(toList()).toArray(new String[expectedVideoCount]));
+                .containsExactly(expectedVideos.stream().map(x -> testDatasetVideos.get(x).name).collect(toList()).toArray(new String[expectedVideoCount]));
     }
 
     @Then("latest videos preview starting from (video\\d) contains: (.*)")
     public void getLatestVideosPreviewWithStartVideoId(String startVideo, List<String> videos) {
         final int expectedVideoCount = videos.size();
-        assertThat(VIDEOS)
+        assertThat(testDatasetVideos)
                 .as("%s is unknown, please specify videoXXX where XXX is a digit")
                 .containsKeys(videos.toArray(new String[expectedVideoCount]));
-        final UUID startVideoId = VIDEOS.get(startVideo).id;
+        final UUID startVideoId = testDatasetVideos.get(startVideo).id;
         final Row row = dseSession.execute(findVideoByIdPs.bind(startVideoId)).one();
 
         assertThat(row)
@@ -246,13 +214,13 @@ public class VideoCatalogServiceSteps extends AbstractSteps {
 
         assertThat(response.getVideoPreviewsList().stream().map(VideoPreview::getName).collect(toList()))
                 .as("Cannot get latest videos preview for %s", String.join(" ,", videos))
-                .containsExactly(videos.stream().map(x -> VIDEOS.get(x).name).collect(toList()).toArray(new String[expectedVideoCount]));
+                .containsExactly(videos.stream().map(x -> testDatasetVideos.get(x).name).collect(toList()).toArray(new String[expectedVideoCount]));
     }
 
     @Then("latest videos preview at page (\\d) contains: (.*)")
     public void getLatestVideosPreviewWithPaging(int pageNumber, List<String> expectedVideos) {
         final int expectedVideoCount = expectedVideos.size();
-        assertThat(VIDEOS)
+        assertThat(testDatasetVideos)
                 .as("%s is unknown, please specify videoXXX where XXX is a digit")
                 .containsKeys(expectedVideos.toArray(new String[expectedVideoCount]));
 
@@ -279,7 +247,7 @@ public class VideoCatalogServiceSteps extends AbstractSteps {
 
         assertThat(response.getVideoPreviewsList().stream().map(VideoPreview::getName).collect(toList()))
                 .as("Cannot get latest videos preview for %s", String.join(" ,", expectedVideos))
-                .containsExactly(expectedVideos.stream().map(x -> VIDEOS.get(x).name).collect(toList()).toArray(new String[expectedVideoCount]));
+                .containsExactly(expectedVideos.stream().map(x -> testDatasetVideos.get(x).name).collect(toList()).toArray(new String[expectedVideoCount]));
     }
 
     @Then("(user\\d) videos preview starting from (video\\d) contains: (.*)")
@@ -287,16 +255,16 @@ public class VideoCatalogServiceSteps extends AbstractSteps {
 
         final int expectedVideoCount = expectedVideos.size();
 
-        assertThat(VIDEOS)
+        assertThat(testDatasetVideos)
                 .as("%s is unknown, please specify videoXXX where XXX is a digit")
                 .containsKeys(expectedVideos.toArray(new String[expectedVideoCount]));
 
-        assertThat(USERS)
+        assertThat(testDatasetUsers)
                 .as("%s is unknown, please specify userXXX where XXX is a digit")
                 .containsKey(user);
 
 
-        final UUID startVideoId = VIDEOS.get(startVideo).id;
+        final UUID startVideoId = testDatasetVideos.get(startVideo).id;
         final Row row = dseSession.execute(findVideoByIdPs.bind(startVideoId)).one();
 
         assertThat(row)
@@ -310,7 +278,7 @@ public class VideoCatalogServiceSteps extends AbstractSteps {
 
         GetUserVideoPreviewsRequest request = GetUserVideoPreviewsRequest
                 .newBuilder()
-                .setUserId(GrpcMapper.uuidToUuid(USERS.get(user)))
+                .setUserId(GrpcMapper.uuidToUuid(testDatasetUsers.get(user)))
                 .setStartingVideoId(GrpcMapper.uuidToUuid(startVideoId))
                 .setStartingAddedDate(GrpcMapper.dateToTimestamp(startVideoAddedDate))
                 .setPageSize(2)
@@ -328,18 +296,18 @@ public class VideoCatalogServiceSteps extends AbstractSteps {
 
         assertThat(response.getVideoPreviewsList().stream().map(VideoPreview::getName).collect(toList()))
                 .as("Cannot get latest videos preview for %s", String.join(" ,", expectedVideos))
-                .containsExactly(expectedVideos.stream().map(x -> VIDEOS.get(x).name).collect(toList()).toArray(new String[expectedVideoCount]));
+                .containsExactly(expectedVideos.stream().map(x -> testDatasetVideos.get(x).name).collect(toList()).toArray(new String[expectedVideoCount]));
     }
 
     @Then("(user\\d) videos preview at page (\\d) contains: (.*)")
     public void getUserVideosPreviewWithPagingState(String user, int pageNumber, List<String> expectedVideos) {
         final int expectedVideoCount = expectedVideos.size();
 
-        assertThat(VIDEOS)
+        assertThat(testDatasetVideos)
                 .as("%s is unknown, please specify videoXXX where XXX is a digit")
                 .containsKeys(expectedVideos.toArray(new String[expectedVideoCount]));
 
-        assertThat(USERS)
+        assertThat(testDatasetUsers)
                 .as("%s is unknown, please specify userXXX where XXX is a digit")
                 .containsKey(user);
 
@@ -350,7 +318,7 @@ public class VideoCatalogServiceSteps extends AbstractSteps {
 
         GetUserVideoPreviewsRequest request = GetUserVideoPreviewsRequest
                 .newBuilder()
-                .setUserId(GrpcMapper.uuidToUuid(USERS.get(user)))
+                .setUserId(GrpcMapper.uuidToUuid(testDatasetUsers.get(user)))
                 .setPagingState(pagingState.get())
                 .setPageSize(2)
                 .build();
@@ -360,14 +328,12 @@ public class VideoCatalogServiceSteps extends AbstractSteps {
         assertThat(response)
                 .as("Cannot get %s videos preview for %s", user, String.join(" ,", expectedVideos))
                 .isNotNull();
-
         assertThat(response.getVideoPreviewsList())
                 .as("Cannot get %s videos preview for %s", user, String.join(" ,", expectedVideos))
                 .hasSize(expectedVideoCount);
-
         assertThat(response.getVideoPreviewsList().stream().map(VideoPreview::getName).collect(toList()))
                 .as("Cannot get %s videos preview for %s", user, String.join(" ,", expectedVideos))
-                .containsExactly(expectedVideos.stream().map(x -> VIDEOS.get(x).name).collect(toList()).toArray(new String[expectedVideoCount]));
+                .containsExactly(expectedVideos.stream().map(x -> testDatasetVideos.get(x).name).collect(toList()).toArray(new String[expectedVideoCount]));
     }
 
     private Optional<String> fetchLatestVideosPages(Optional<String> pagingState) {
@@ -408,7 +374,7 @@ public class VideoCatalogServiceSteps extends AbstractSteps {
         if (pagingState.isPresent()) {
             request = GetUserVideoPreviewsRequest
                     .newBuilder()
-                    .setUserId(GrpcMapper.uuidToUuid(USERS.get(user)))
+                    .setUserId(GrpcMapper.uuidToUuid(testDatasetUsers.get(user)))
                     .setPagingState(pagingState.get())
                     .setPageSize(2)
                     .build();
@@ -416,7 +382,7 @@ public class VideoCatalogServiceSteps extends AbstractSteps {
         } else {
             request = GetUserVideoPreviewsRequest
                     .newBuilder()
-                    .setUserId(GrpcMapper.uuidToUuid(USERS.get(user)))
+                    .setUserId(GrpcMapper.uuidToUuid(testDatasetUsers.get(user)))
                     .setPageSize(2)
                     .build();
         }

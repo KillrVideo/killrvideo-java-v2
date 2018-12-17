@@ -7,13 +7,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicReference;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.datastax.driver.core.utils.UUIDs;
-import com.killrvideo.dse.utils.DseUtils;
 
 import cucumber.api.java.After;
 import cucumber.api.java.Before;
@@ -30,41 +25,33 @@ import killrvideo.comments.CommentsServiceOuterClass.UserComment;
 import killrvideo.comments.CommentsServiceOuterClass.VideoComment;
 import killrvideo.common.CommonTypes.TimeUuid;
 
+/**
+ * Testing comment services.
+ *s
+ * @author Developer Advocates Team
+ */
 public class CommentsServiceSteps extends AbstractSteps  {
-
-    private static Logger LOGGER = LoggerFactory.getLogger(CommentsServiceSteps.class);
-    private static AtomicReference<Boolean> SHOULD_CHECK_SERVICE= new AtomicReference<>(true);
-
+    
     @Before("@comments_scenarios")
     public void init() {
-        if (SHOULD_CHECK_SERVICE.get()) {
-            etcdDao.read("/killrvideo/services/" + COMMENTS_SERVICE_NAME, true);
-        }
-        LOGGER.info("Truncating users, videos & comments tables BEFORE executing tests");
-        DseUtils.truncate(dseSession, "comments_by_video");
-        DseUtils.truncate(dseSession,"comments_by_user");
+        truncateAllTablesFromKillrVideoKeyspace();
     }
     
     @After("@comments_scenarios")
     public void cleanup() {
-        LOGGER.info("Truncating users, videos & comments tables AFTER executing tests");
-        cleanUpUserAndVideoTables();
-        DseUtils.truncate(dseSession, "comments_by_video");
-        DseUtils.truncate(dseSession,"comments_by_user");
+        truncateAllTablesFromKillrVideoKeyspace();
     }
 
     @When("we have the following comments:")
     public void createCommentsOnVideo(List<CucumberVideoComment> comments) {
-
         for (CucumberVideoComment comment : comments) {
             CommentOnVideoRequest request = CommentOnVideoRequest
                     .newBuilder()
                     .setCommentId(uuidToTimeUuid(UUIDs.timeBased()))
                     .setComment(comment.getComment())
-                    .setUserId(uuidToUuid(USERS.get(comment.getUser())))
-                    .setVideoId(uuidToUuid(VIDEOS.get(comment.getVideo()).id))
+                    .setUserId(uuidToUuid(testDatasetUsers.get(comment.getUser())))
+                    .setVideoId(uuidToUuid(testDatasetVideos.get(comment.getVideo()).id))
                     .build();
-
             final CommentOnVideoResponse response = grpcClient.getCommentService().commentOnVideo(request);
 
             assertThat(response)
@@ -74,18 +61,17 @@ public class CommentsServiceSteps extends AbstractSteps  {
                             comment.getUser())
                     .isNotNull();
         }
-
     }
 
     @Then("^I can see the comment '(.+)' on (video\\d)$")
     public void checkForCommentOnVideo(String expectedComment, String sourceVideo) {
-        assertThat(VIDEOS)
+        assertThat(testDatasetVideos)
                 .as("%s is unknown, please specify videoXXX where XXX is a digit")
                 .containsKey(sourceVideo);
 
         GetVideoCommentsRequest request = GetVideoCommentsRequest
                 .newBuilder()
-                .setVideoId(uuidToUuid(VIDEOS.get(sourceVideo).id))
+                .setVideoId(uuidToUuid(testDatasetVideos.get(sourceVideo).id))
                 .setPageSize(100)
                 .build();
 
@@ -102,7 +88,7 @@ public class CommentsServiceSteps extends AbstractSteps  {
 
     @Then("^I can see the comment '(.+)' on (video\\d) at page (\\d)$")
     public void checkForCommentOnVideoWithPaging(String expectedComment, String sourceVideo, int pageNumber) {
-        assertThat(VIDEOS)
+        assertThat(testDatasetVideos)
                 .as("%s is unknown, please specify videoXXX where XXX is a digit")
                 .containsKey(sourceVideo);
 
@@ -113,7 +99,7 @@ public class CommentsServiceSteps extends AbstractSteps  {
 
         final GetVideoCommentsRequest request = GetVideoCommentsRequest
                 .newBuilder()
-                .setVideoId(uuidToUuid(VIDEOS.get(sourceVideo).id))
+                .setVideoId(uuidToUuid(testDatasetVideos.get(sourceVideo).id))
                 .setStartingCommentId(startCommentId.get())
                 .setPageSize(1)
                 .build();
@@ -137,14 +123,14 @@ public class CommentsServiceSteps extends AbstractSteps  {
         if (startCommentId.isPresent()) {
             request = GetVideoCommentsRequest
                     .newBuilder()
-                    .setVideoId(uuidToUuid(VIDEOS.get(video).id))
+                    .setVideoId(uuidToUuid(testDatasetVideos.get(video).id))
                     .setStartingCommentId(startCommentId.get())
                     .setPageSize(1)
                     .build();
         } else {
             request = GetVideoCommentsRequest
                     .newBuilder()
-                    .setVideoId(uuidToUuid(VIDEOS.get(video).id))
+                    .setVideoId(uuidToUuid(testDatasetVideos.get(video).id))
                     .setPageSize(1)
                     .build();
         }
@@ -166,13 +152,13 @@ public class CommentsServiceSteps extends AbstractSteps  {
 
     @And("^(user\\d) can see the comment '(.+)' on his own comments$")
     public void checkForCommentOfUser(String user, String expectedComment) {
-        assertThat(USERS)
+        assertThat(testDatasetUsers)
                 .as("%s is unknown, please specify userXXX where XXX is a digit")
                 .containsKey(user);
 
         GetUserCommentsRequest request = GetUserCommentsRequest
                 .newBuilder()
-                .setUserId(uuidToUuid(USERS.get(user)))
+                .setUserId(uuidToUuid(testDatasetUsers.get(user)))
                 .setPageSize(100)
                 .build();
 
@@ -190,7 +176,7 @@ public class CommentsServiceSteps extends AbstractSteps  {
     @And("^(user\\d) can see the comment '(.+)' on his own comments at page (\\d)$")
     public void checkForCommentOfUserWithPaging(String user, String expectedComment, int pageNumber) {
 
-        assertThat(USERS)
+        assertThat(testDatasetUsers)
                 .as("%s is unknown, please specify userXXX where XXX is a digit")
                 .containsKey(user);
 
@@ -201,7 +187,7 @@ public class CommentsServiceSteps extends AbstractSteps  {
 
         GetUserCommentsRequest request = GetUserCommentsRequest
                 .newBuilder()
-                .setUserId(uuidToUuid(USERS.get(user)))
+                .setUserId(uuidToUuid(testDatasetUsers.get(user)))
                 .setStartingCommentId(startCommentId.get())
                 .setPageSize(1)
                 .build();
@@ -226,14 +212,14 @@ public class CommentsServiceSteps extends AbstractSteps  {
         if (startCommentId.isPresent()) {
             request = GetUserCommentsRequest
                     .newBuilder()
-                    .setUserId(uuidToUuid(USERS.get(user)))
+                    .setUserId(uuidToUuid(testDatasetUsers.get(user)))
                     .setStartingCommentId(startCommentId.get())
                     .setPageSize(1)
                     .build();
         } else {
             request = GetUserCommentsRequest
                     .newBuilder()
-                    .setUserId(uuidToUuid(USERS.get(user)))
+                    .setUserId(uuidToUuid(testDatasetUsers.get(user)))
                     .setPageSize(1)
                     .build();
         }

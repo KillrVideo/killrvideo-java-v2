@@ -41,7 +41,6 @@ public class UserDseDaoTestIT extends AbstractTest {
         myNewUser.setFirstname("b");
         myNewUser.setLastname("b");
         myNewUser.setUserid(UUID.randomUUID());
-        
         userDao.createUserAsync(myNewUser, HashUtils.hashPassword("bb"))
                .whenComplete((rs, errors) -> {
                    System.out.println("rs:" + rs);

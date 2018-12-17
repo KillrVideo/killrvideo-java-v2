@@ -17,7 +17,7 @@
 	<parent>
 		<groupId>com.datastax</groupId>
 		<artifactId>killrvideo-parent</artifactId>
-		<version>6</version>
+		<version>6.7.0</version>
 	</parent>
    
     <!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
@@ -31,6 +31,7 @@
        	 <artifactId>killrvideo-dse</artifactId>
        	 <version>${project.version}</version>
        </dependency>
+       
        <dependency>
        	 <groupId>com.datastax</groupId>
        	 <artifactId>killrvideo-messaging</artifactId>
@@ -144,7 +145,7 @@
                     <pluginId>grpc-java</pluginId>
                     <pluginArtifact>io.grpc:protoc-gen-grpc-java:${protoc-gen-grpc.version}:exe:${os.detected.classifier}</pluginArtifact>
                 </configuration>
-                <executions>
+				<executions>
                     <execution>
                         <goals>
                             <goal>compile</goal>
@@ -152,7 +153,7 @@
                         </goals>
                     </execution>
                 </executions>
-            </plugin>
+             </plugin>
             
             <!-- Spring Boot -->
             <plugin>

@@ -1,6 +1,5 @@
 package com.killrvideo.dse.dao;
 
-import static com.killrvideo.core.utils.FutureUtils.asCompletableFuture;
 import static com.killrvideo.dse.model.Comment.COLUMN_COMMENT;
 import static com.killrvideo.dse.model.Comment.COLUMN_COMMENTID;
 import static com.killrvideo.dse.model.Comment.COLUMN_USERID;
@@ -38,6 +37,7 @@ import com.datastax.driver.mapping.annotations.Param;
 import com.datastax.driver.mapping.annotations.Query;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
+import com.killrvideo.core.utils.FutureUtils;
 import com.killrvideo.dse.dao.dto.QueryCommentByUser;
 import com.killrvideo.dse.dao.dto.QueryCommentByVideo;
 import com.killrvideo.dse.dao.dto.ResultListPage;
@@ -211,7 +211,7 @@ public class CommentDseDao extends AbstractDseDao {
     public CompletableFuture < ResultListPage<Comment> > findCommentsByVideosIdAsync(final QueryCommentByVideo query) {
         BoundStatement  boundStatement  = buildStatementVideoComments(query);                   // Parse input to create statement
         ResultSetFuture resultSetFuture = dseSession.executeAsync(boundStatement);              // Execute statement to get a FUTURE resultSet (Async)
-        return asCompletableFuture(resultSetFuture).thenApplyAsync(this::mapToCommentList);  // Iterate on resultSet to build result bean
+        return FutureUtils.asCompletableFuture(resultSetFuture).thenApplyAsync(this::mapToCommentList);  // Iterate on resultSet to build result bean
     }
     
     /**
@@ -227,7 +227,7 @@ public class CommentDseDao extends AbstractDseDao {
      */
     public CompletableFuture< ResultListPage<Comment> > findCommentsByUserIdAsync(final QueryCommentByUser query) {
         // Like before but inlined as a boss.. again 
-        return asCompletableFuture(dseSession.executeAsync(buildStatementUserComments(query)))
+        return FutureUtils.asCompletableFuture(dseSession.executeAsync(buildStatementUserComments(query)))
                                                 .thenApplyAsync(this::mapToCommentList);
     }
     

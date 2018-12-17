@@ -1,7 +1,6 @@
 package com.killrvideo.dse.dao;
 
 import static com.datastax.driver.core.querybuilder.QueryBuilder.update;
-import static com.killrvideo.core.utils.FutureUtils.asCompletableFuture;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -18,6 +17,7 @@ import com.datastax.driver.core.RegularStatement;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.dse.DseSession;
 import com.datastax.driver.mapping.Mapper;
+import com.killrvideo.core.utils.FutureUtils;
 import com.killrvideo.dse.model.VideoRating;
 import com.killrvideo.dse.model.VideoRatingByUser;
 
@@ -115,9 +115,9 @@ public class RatingDseDao extends AbstractDseDao {
          * mapper will prepare the statement for you automagically.
          */
         return CompletableFuture.allOf(
-                asCompletableFuture(dseSession.executeAsync(statement)),
+                FutureUtils.asCompletableFuture(dseSession.executeAsync(statement)),
                 // asCompletableFuture(dseSession.executeAsync(mapperVideoRatingByUser.saveQuery(entity))),
-                asCompletableFuture(mapperVideoRatingByUser.saveAsync(entity)));
+                FutureUtils.asCompletableFuture(mapperVideoRatingByUser.saveAsync(entity)));
     }
     
     /**
@@ -130,7 +130,7 @@ public class RatingDseDao extends AbstractDseDao {
      */
     public CompletableFuture< Optional < VideoRating > > findRating(UUID videoId) {
         assertNotNull("findRating", "videoId", videoId);
-        return asCompletableFuture(mapperVideoRating.getAsync(videoId)).thenApplyAsync(Optional::ofNullable);
+        return FutureUtils.asCompletableFuture(mapperVideoRating.getAsync(videoId)).thenApplyAsync(Optional::ofNullable);
     }
     
     /**
@@ -146,7 +146,7 @@ public class RatingDseDao extends AbstractDseDao {
     public CompletableFuture< Optional < VideoRatingByUser > > findUserRating(UUID videoId, UUID userid) {
         assertNotNull("findUserRating", "videoId", videoId);
         assertNotNull("findUserRating", "userid", userid);
-        return asCompletableFuture(mapperVideoRatingByUser.getAsync(videoId, userid))
+        return FutureUtils.asCompletableFuture(mapperVideoRatingByUser.getAsync(videoId, userid))
                     .thenApplyAsync(Optional::ofNullable);
     }
   

@@ -3,13 +3,6 @@ package com.killrvideo.grpc.test.integration.step;
 import static com.killrvideo.grpc.utils.GrpcMapper.uuidToUuid;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.util.concurrent.atomic.AtomicReference;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.killrvideo.dse.utils.DseUtils;
-
 import cucumber.api.java.After;
 import cucumber.api.java.Before;
 import cucumber.api.java.en.Then;
@@ -21,38 +14,29 @@ import killrvideo.ratings.RatingsServiceOuterClass.GetUserRatingResponse;
 import killrvideo.ratings.RatingsServiceOuterClass.RateVideoRequest;
 import killrvideo.ratings.RatingsServiceOuterClass.RateVideoResponse;
 
+/**
+ * Testing Rating services
+ */
 public class RatingServiceSteps extends AbstractSteps {
-
-    private static Logger LOGGER = LoggerFactory.getLogger(RatingServiceSteps.class);
-    private static AtomicReference<Boolean> SHOULD_CHECK_SERVICE= new AtomicReference<>(true);
-
+    
     @Before("@ratings_scenarios")
     public void init() {
-        if (SHOULD_CHECK_SERVICE.get()) {
-            etcdDao.read("/killrvideo/services/" + RATINGS_SERVICE_NAME, true);
-        }
-        cleanUpUserAndVideoTables();
-        LOGGER.info("Truncating users, videos & ratings tables BEFORE executing tests");
-        DseUtils.truncate(dseSession, "video_ratings");
-        DseUtils.truncate(dseSession, "video_ratings_by_user");
+        truncateAllTablesFromKillrVideoKeyspace();
     }
 
     @After("@ratings_scenarios")
     public void cleanup() {
-        LOGGER.info("Truncating users, videos & ratings tables AFTER executing tests");
-        cleanUpUserAndVideoTables();
-        DseUtils.truncate(dseSession, "video_ratings");
-        DseUtils.truncate(dseSession, "video_ratings_by_user");
+        truncateAllTablesFromKillrVideoKeyspace();
     }
 
     @When("(user\\d) rates (video\\d) (\\d) stars")
     public void rateVideo(String user, String video, int starNumber) {
 
-        assertThat(VIDEOS)
+        assertThat(testDatasetVideos)
                 .as("%s is unknown, please specify videoXXX where XXX is a digit")
                 .containsKeys(video);
 
-        assertThat(USERS)
+        assertThat(testDatasetUsers)
                 .as("%s is unknown, please specify userXXX where XXX is a digit")
                 .containsKey(user);
 
@@ -63,8 +47,8 @@ public class RatingServiceSteps extends AbstractSteps {
         RateVideoRequest request = RateVideoRequest
                 .newBuilder()
                 .setRating(starNumber)
-                .setUserId(uuidToUuid(USERS.get(user)))
-                .setVideoId(uuidToUuid(VIDEOS.get(video).id))
+                .setUserId(uuidToUuid(testDatasetUsers.get(user)))
+                .setVideoId(uuidToUuid(testDatasetVideos.get(video).id))
                 .build();
 
         final RateVideoResponse response = grpcClient.getRatingService().rateVideo(request);
@@ -77,7 +61,7 @@ public class RatingServiceSteps extends AbstractSteps {
     @Then("(video\\d) has (\\d+) ratings and total (\\d+) stars")
     public void getRatings(String video, long expectedRatingCount, long expectedTotalStars) {
 
-        assertThat(VIDEOS)
+        assertThat(testDatasetVideos)
                 .as("%s is unknown, please specify videoXXX where XXX is a digit")
                 .containsKeys(video);
 
@@ -91,7 +75,7 @@ public class RatingServiceSteps extends AbstractSteps {
 
         GetRatingRequest request = GetRatingRequest
                 .newBuilder()
-                .setVideoId(uuidToUuid(VIDEOS.get(video).id))
+                .setVideoId(uuidToUuid(testDatasetVideos.get(video).id))
                 .build();
 
         final GetRatingResponse response = grpcClient.getRatingService().getRating(request);
@@ -112,12 +96,12 @@ public class RatingServiceSteps extends AbstractSteps {
     @Then("(user\\d) rating for (video\\d) has (\\d+) stars")
     public void getUserRatings(String user, String targetVideo, int expectedTotalStars) {
 
-        assertThat(VIDEOS)
+        assertThat(testDatasetVideos)
                 .as("%s is unknown, please specify videoXXX where XXX is a digit")
                 .containsKeys(targetVideo);
 
 
-        assertThat(USERS)
+        assertThat(testDatasetUsers)
                 .as("%s is unknown, please specify userXXX where XXX is a digit")
                 .containsKey(user);
 
@@ -127,8 +111,8 @@ public class RatingServiceSteps extends AbstractSteps {
 
         GetUserRatingRequest request = GetUserRatingRequest
                 .newBuilder()
-                .setUserId(uuidToUuid(USERS.get(user)))
-                .setVideoId(uuidToUuid(VIDEOS.get(targetVideo).id))
+                .setUserId(uuidToUuid(testDatasetUsers.get(user)))
+                .setVideoId(uuidToUuid(testDatasetVideos.get(targetVideo).id))
                 .build();
 
         final GetUserRatingResponse response = grpcClient.getRatingService().getUserRating(request);

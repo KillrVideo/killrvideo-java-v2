@@ -1,7 +1,5 @@
 package com.killrvideo.grpc.test;
 
-import org.junit.Test;
-
 import com.killrvideo.grpc.client.KillrVideoGrpcClient;
 
 import killrvideo.video_catalog.VideoCatalogServiceOuterClass.GetLatestVideoPreviewsRequest;
@@ -15,23 +13,15 @@ import killrvideo.video_catalog.VideoCatalogServiceOuterClass.VideoPreview;
  */
 public class VideoCatalogGrpcTest {
     
-    @Test
     public void testGetLatestVideos() throws Exception {
-        
-        //-->
-        KillrVideoGrpcClient killrVideoClient = new KillrVideoGrpcClient("10.0.75.1", 50101);
-        // <--
-        
+        KillrVideoGrpcClient killrVideoClient = new KillrVideoGrpcClient("10.0.75.1", 8899);
         // Request
         GetLatestVideoPreviewsRequest req = 
                 GetLatestVideoPreviewsRequest.newBuilder().setPageSize(5).build();
-        
         GetLatestVideoPreviewsResponse res = 
                 killrVideoClient.getVideoCatalogService().getLatestVideoPreviews(req);
-
         // Async
         Thread.sleep(1000);
-        
         System.out.println("VideoCatalog.getLatestVideoPreviews() : " + res.getVideoPreviewsCount() + " video(s) found.");
         for(int i=0;i< res.getVideoPreviewsCount() ;i++) {
             VideoPreview vp = res.getVideoPreviews(i);

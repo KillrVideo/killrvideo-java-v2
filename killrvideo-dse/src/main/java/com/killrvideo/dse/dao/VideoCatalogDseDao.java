@@ -1,7 +1,5 @@
 package com.killrvideo.dse.dao;
 
-import static com.killrvideo.core.utils.FutureUtils.asCompletableFuture;
-
 import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.time.ZoneId;
@@ -265,7 +263,7 @@ public class VideoCatalogDseDao extends AbstractDseDao {
         pagingState.ifPresent( x -> bound.setPagingState(PagingState.fromString(x)));
         
         // Execute Query
-        return asCompletableFuture(userVideosMapper.mapAsync(dseSession.executeAsync(bound)))
+        return FutureUtils.asCompletableFuture(userVideosMapper.mapAsync(dseSession.executeAsync(bound)))
                 .< ResultListPage<UserVideo> > thenApply(ResultListPage::new);
     }
     

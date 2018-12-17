@@ -8,13 +8,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.killrvideo.dse.utils.DseUtils;
 
 import cucumber.api.java.After;
 import cucumber.api.java.Before;
@@ -29,30 +23,20 @@ import killrvideo.statistics.StatisticsServiceOuterClass.RecordPlaybackStartedRe
 
 public class StatisticsServiceSteps extends AbstractSteps {
 
-    private static Logger LOGGER = LoggerFactory.getLogger(RatingServiceSteps.class);
-    private static AtomicReference<Boolean> SHOULD_CHECK_SERVICE= new AtomicReference<>(true);
-
     @Before("@stats_scenarios")
     public void init() {
-        if (SHOULD_CHECK_SERVICE.get()) {
-            etcdDao.read("/killrvideo/services/" + STATISTICS_SERVICE_NAME, true);
-        }
-        LOGGER.info("Truncating users, videos & statistics tables BEFORE executing tests");
-        cleanUpUserAndVideoTables();
-        DseUtils.truncate(dseSession, "video_playback_stats");
+        truncateAllTablesFromKillrVideoKeyspace();
     }
 
     @After("@stats_scenarios")
     public void cleanup() {
-        LOGGER.info("Truncating users, videos & statistics tables AFTER executing tests");
-        cleanUpUserAndVideoTables();
-        DseUtils.truncate(dseSession, "video_playback_stats");
+        truncateAllTablesFromKillrVideoKeyspace();
     }
 
     @And("(video\\d) is watched (\\d+) times")
     public void recordPlayback(String video, int playbackCount) {
 
-        assertThat(VIDEOS)
+        assertThat(testDatasetVideos)
                 .as("%s is unknown, please specify videoXXX where XXX is a digit")
                 .containsKeys(video);
 
@@ -67,7 +51,7 @@ public class StatisticsServiceSteps extends AbstractSteps {
 
             request = RecordPlaybackStartedRequest
                     .newBuilder()
-                    .setVideoId(uuidToUuid(VIDEOS.get(video).id))
+                    .setVideoId(uuidToUuid(testDatasetVideos.get(video).id))
                     .build();
 
             response = grpcClient.getStatisticService().recordPlaybackStarted(request);
@@ -86,7 +70,7 @@ public class StatisticsServiceSteps extends AbstractSteps {
         final String listOfVideos = String.join(", ", videos);
         final String listOfStatistics = String.join(", ", expectedPlaybackCountsList.stream().map(x -> x.toString()).collect(toList()));
 
-        assertThat(VIDEOS)
+        assertThat(testDatasetVideos)
                 .as("%s is unknown, please specify videoXXX where XXX is a digit")
                 .containsKeys(videos.toArray(new String[videosCount]));
 
@@ -105,7 +89,7 @@ public class StatisticsServiceSteps extends AbstractSteps {
 
         final Builder builder = GetNumberOfPlaysRequest.newBuilder();
 
-        videos.forEach(video -> builder.addVideoIds(uuidToUuid(VIDEOS.get(video).id)));
+        videos.forEach(video -> builder.addVideoIds(uuidToUuid(testDatasetVideos.get(video).id)));
 
         final GetNumberOfPlaysRequest request = builder.build();
 
@@ -121,7 +105,7 @@ public class StatisticsServiceSteps extends AbstractSteps {
 
         final Map<String, Long> expectedVideosPlayBackStats = response.getStatsList()
                 .stream()
-                .collect(toMap(x -> VIDEOS_BY_ID.get(UUID.fromString(x.getVideoId().getValue())),
+                .collect(toMap(x -> testDatasetVideosById.get(UUID.fromString(x.getVideoId().getValue())),
                         PlayStats::getViews));
 
         assertThat(expectedVideosPlayBackStats)

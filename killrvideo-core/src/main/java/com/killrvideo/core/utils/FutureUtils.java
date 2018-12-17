@@ -9,7 +9,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 /**
  * Utility class to work on Futures.
  * 
- * @author DataStax evangelist team.
+ * @author DataStax developer advocates team.
  */
 public class FutureUtils {
 

@@ -1,5 +1,8 @@
 package com.killrvideo.grpc.test.integration.dto;
 
+/**
+ * POJO for tests.
+ **/
 public class CucumberVideoDetails {
 
     public final String id;
@@ -13,7 +16,6 @@ public class CucumberVideoDetails {
         this.name = name;
         this.description = description;
         this.tags = tags;
-
         this.url = url;
     }
 }

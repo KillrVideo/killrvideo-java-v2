@@ -44,7 +44,7 @@ public class CassandraMutationErrorHandler {
      *
      */
     @Subscribe
-    public void handle(ErrorEvent mutationError) {
+    public void handle(final ErrorEvent mutationError) {
         final String errorLog = mutationError.buildErrorLog();
         LOGGER.debug(String.format("Recording mutation error %s", errorLog));
         errorLogFile.append(errorLog).append("\n***********************\n");

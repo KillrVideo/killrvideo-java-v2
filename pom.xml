@@ -8,9 +8,9 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.datastax</groupId>
 	<artifactId>killrvideo-parent</artifactId>
-	<name>killrvideo v2</name>
+	<name>KillrVideo</name>
 	<packaging>pom</packaging>
-	<version>6</version>
+	<version>6.7.0</version>
 
 	<!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
 	<!-- ~ OVERVIEW ~ -->
@@ -30,6 +30,7 @@
 		<module>killrvideo-dse</module>
 		<module>killrvideo-messaging</module>
 		<module>killrvideo-api-grpc</module>
+		<module>killrvideo-api-grpc-test</module>
 	</modules>
 
 	<!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->

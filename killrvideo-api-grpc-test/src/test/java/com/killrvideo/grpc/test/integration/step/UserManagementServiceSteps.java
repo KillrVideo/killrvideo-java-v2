@@ -10,15 +10,14 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.lang3.RandomStringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.Row;
-import com.killrvideo.dse.utils.DseUtils;
 
 import cucumber.api.java.After;
 import cucumber.api.java.Before;
@@ -35,41 +34,29 @@ import killrvideo.user_management.UserManagementServiceOuterClass.VerifyCredenti
 import killrvideo.user_management.UserManagementServiceOuterClass.VerifyCredentialsResponse;
 
 public class UserManagementServiceSteps extends AbstractSteps {
-
-    private static Logger LOGGER = LoggerFactory.getLogger(UserManagementServiceSteps.class);
-    
-    private static AtomicReference<Boolean> SHOULD_CHECK_SERVICE= new AtomicReference<>(true);
     
     private static final Map<String, UserProfile> PROFILES = new HashMap<>();
-    
     private static final Map<String, String> ERRORS = new ConcurrentHashMap<>();
     
     @Before("@user_scenarios")
     public void init() {
-        if (SHOULD_CHECK_SERVICE.get()) {
-            etcdDao.read("/killrvideo/services/" + USER_SERVICE_NAME, true);
-        }
-        LOGGER.info("Truncating users/user_credentials tables BEFORE executing tests");
-        DseUtils.truncate(dseSession, "user_credentials");
-        DseUtils.truncate(dseSession,"users");
+        truncateAllTablesFromKillrVideoKeyspace();
     }
 
     @After("@user_scenarios")
     public void cleanup() {
-        LOGGER.info("Truncating users/user_credentials tables AFTER executing tests");
-        DseUtils.truncate(dseSession, "user_credentials");
-        DseUtils.truncate(dseSession, "users");
+        truncateAllTablesFromKillrVideoKeyspace();
     }
 
     @Given("those users already exist: (.*)")
     public void createUserWithId(List<String> users) throws Exception {
         for (String user : users) {
-            assertThat(USERS)
+            assertThat(testDatasetUsers)
                     .as("%s is unknown, please specify userXXX where XXX is a digit")
                     .containsKey(user);
 
             final CreateUserRequest request = CreateUserRequest.newBuilder()
-                    .setUserId(uuidToUuid(USERS.get(user)))
+                    .setUserId(uuidToUuid(testDatasetUsers.get(user)))
                     .setEmail(RandomStringUtils.randomAlphabetic(10) + "@gmail.com")
                     .setFirstName(RandomStringUtils.randomAlphabetic(5))
                     .setLastName(RandomStringUtils.randomAlphabetic(5))
@@ -86,7 +73,7 @@ public class UserManagementServiceSteps extends AbstractSteps {
     @Given("^user with email (.+) does not exist$")
     public void ensureUserDoesNotExist(String email) {
         final BoundStatement bs = findUserByEmailPs.bind(email);
-        final Row foundUserByEmail = getOne(bs);
+        final Row foundUserByEmail = dseSession.execute(bs).one();
         assertThat(foundUserByEmail)
                 .as("User with email %s should not already exist", email)
                 .isNull();
@@ -95,7 +82,6 @@ public class UserManagementServiceSteps extends AbstractSteps {
     @When("I create (\\d) users with email (.+) and password (.+)")
     public void createUserWithEmail(int userCount, String email, String password) throws Exception {
         List<CreateUserRequest> requests = new ArrayList<>();
-
         for (int i=1; i<= userCount; i++) {
             requests.add(CreateUserRequest.newBuilder()
                     .setUserId(uuidToUuid(UUID.randomUUID()))
@@ -105,9 +91,9 @@ public class UserManagementServiceSteps extends AbstractSteps {
                     .setPassword(password)
                     .build());
         }
-
         final CountDownLatch startLatch = new CountDownLatch(userCount);
-        requests.forEach(x -> threadPool.submit(createThreadForUserCreation(startLatch, grpcClient.getUserService(), x)));
+        final ThreadPoolExecutor myThreadPool = new ThreadPoolExecutor(10, 10, 1, TimeUnit.SECONDS, new LinkedBlockingQueue<>());
+        requests.forEach(x -> myThreadPool.submit(createThreadForUserCreation(startLatch, grpcClient.getUserService(), x)));
         startLatch.await();
     }
 
@@ -155,7 +141,7 @@ public class UserManagementServiceSteps extends AbstractSteps {
     @When("I get profile of (.+)")
     public void getProfile(String email) {
         final BoundStatement bs    = findUserByEmailPs.bind(email);
-        final Row foundUserByEmail = getOne(bs);
+        final Row foundUserByEmail = dseSession.execute(bs).one();
 
         assertThat(foundUserByEmail).as("Cannot find user with email %s", email).isNotNull();
 
@@ -188,7 +174,7 @@ public class UserManagementServiceSteps extends AbstractSteps {
                 .isEqualTo(email);
     }
 
-    private Runnable createThreadForUserCreation(
+    public Runnable createThreadForUserCreation(
             final CountDownLatch startLatch,
             final UserManagementServiceBlockingStub stub,
             final CreateUserRequest request) {

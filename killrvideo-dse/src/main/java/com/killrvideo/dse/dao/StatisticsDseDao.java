@@ -1,7 +1,5 @@
 package com.killrvideo.dse.dao;
 
-import static com.killrvideo.core.utils.FutureUtils.asCompletableFuture;
-
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -75,7 +73,7 @@ public class StatisticsDseDao extends AbstractDseDao {
     public CompletableFuture<Void> recordPlaybackStartedAsync(UUID videoId) {
         Assert.notNull(videoId, "videoid is required to update statistics");
         BoundStatement bound = incrRecordPlayBacks.bind().setUUID(VideoPlaybackStats.COLUMN_VIDEOID, videoId);
-        return asCompletableFuture(dseSession.executeAsync(bound)).<Void>thenApply(c -> null);
+        return FutureUtils.asCompletableFuture(dseSession.executeAsync(bound)).<Void>thenApply(c -> null);
     }
     
     /**

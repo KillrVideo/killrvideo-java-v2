@@ -119,6 +119,8 @@ public class DseConfiguration {
              return clusterConfig.build().connect(SchemaConstants.KILLRVIDEO_KEYSPACE);
          };
          
+         // Connecting to DSE with a retry mechanism : 
+         /* In docker deployments we may have to wait until all components are up and running. */
          RetryConfig config = new RetryConfigBuilder()
                  .retryOnAnyException()
                  .withMaxNumberOfTries(maxNumberOfTries)

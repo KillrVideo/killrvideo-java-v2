@@ -1,7 +1,5 @@
 package com.killrvideo.dse.dao;
 
-import static com.killrvideo.core.utils.FutureUtils.asCompletableFuture;
-
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
@@ -24,6 +22,7 @@ import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.dse.DseSession;
 import com.datastax.driver.mapping.Mapper;
 import com.datastax.driver.mapping.Result;
+import com.killrvideo.core.utils.FutureUtils;
 import com.killrvideo.dse.model.User;
 import com.killrvideo.dse.model.UserCredentials;
 
@@ -121,7 +120,7 @@ public class UserDseDao extends AbstractDseDao {
                 .setUUID(UserCredentials.COLUMN_USERID, user.getUserid());
         
         // Create Record in user_Credentials if not already exist
-        CompletableFuture<ResultSet> future1 = asCompletableFuture(dseSession.executeAsync(insertCredentialsQuery)); 
+        CompletableFuture<ResultSet> future1 = FutureUtils.asCompletableFuture(dseSession.executeAsync(insertCredentialsQuery)); 
         
         // Execute user creation only if credentials did no exist
         CompletableFuture<ResultSet> future2 = future1.thenCompose(rs -> {
@@ -130,7 +129,7 @@ public class UserDseDao extends AbstractDseDao {
                                 .setUUID(User.COLUMN_USERID, user.getUserid())
                                 .setString(User.COLUMN_FIRSTNAME, user.getFirstname()).setString(User.COLUMN_LASTNAME, user.getLastname())
                                 .setString(User.COLUMN_EMAIL, user.getEmail()).setTimestamp(User.COLUMN_CREATE, new Date());
-                    return asCompletableFuture(dseSession.executeAsync(insertUserQuery));
+                    return FutureUtils.asCompletableFuture(dseSession.executeAsync(insertUserQuery));
             }
             return future1;
         });
@@ -152,7 +151,7 @@ public class UserDseDao extends AbstractDseDao {
      * @return
      */
     public CompletableFuture< UserCredentials > getUserCredentialAsync(String email) {
-        return asCompletableFuture(mapperUserCredentials.getAsync(email));
+        return FutureUtils.asCompletableFuture(mapperUserCredentials.getAsync(email));
     }
     
     /**
@@ -163,7 +162,7 @@ public class UserDseDao extends AbstractDseDao {
      */
     public CompletableFuture < List < User > > getUserProfilesAsync(List < UUID > userids) {
         Statement stmt = findUsersByIdsStatement.bind().setList(0, userids, UUID.class);
-        return asCompletableFuture(mapperUsers.mapAsync(dseSession.executeAsync(stmt))).thenApply(Result::all);
+        return FutureUtils.asCompletableFuture(mapperUsers.mapAsync(dseSession.executeAsync(stmt))).thenApply(Result::all);
     }
        
 }
