@@ -6,15 +6,14 @@ metadata:
     kompose.version: 1.10.0 ()
   creationTimestamp: null
   labels:
-    io.kompose.service: registrator
-  name: registrator
+    io.kompose.service: kafka
+  name: kafka
 spec:
-  clusterIP: None
   ports:
-  - name: headless
-    port: 55555
-    targetPort: 0
+  - name: "9092"
+    port: 9092
+    targetPort: 9092
   selector:
-    io.kompose.service: registrator
+    io.kompose.service: kafka
 status:
   loadBalancer: {}

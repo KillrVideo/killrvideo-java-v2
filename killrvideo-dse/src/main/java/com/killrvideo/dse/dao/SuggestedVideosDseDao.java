@@ -336,8 +336,8 @@ public class SuggestedVideosDseDao extends AbstractDseDao implements KillrVideoT
        
         final StringBuilder solrQuery = new StringBuilder();
         solrQuery.append(pagingDriverStart);
-        solrQuery.append("name:").append(delimitedTermList).append(space);
-        solrQuery.append("tags:").append(delimitedTermList).append(space);
+        solrQuery.append("name:(").append(delimitedTermList).append(")^2").append(space);
+        solrQuery.append("tags:(").append(delimitedTermList).append(")^4").append(space);
         solrQuery.append("description:").append(delimitedTermList);
         solrQuery.append(pagingDriverEnd);
         

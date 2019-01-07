@@ -148,5 +148,4 @@ public class EtcdDao {
         return fullServiceName.replaceAll(".*\\.([^.]+)", "$1");
     }
     
-    
 }

@@ -264,11 +264,11 @@ public class SearchDseDao extends AbstractDseDao {
          */
         final StringBuilder solrQuery = new StringBuilder()
                 .append(pagingDriverStart)
-                .append("name:(").append(requestQuery).append(")^4 OR ")
-                .append("tags:(").append(requestQuery).append(")^2 OR ")
-                .append("description:(").append(requestQuery).append(")")
+                .append("name:(").append(requestQuery).append("*)^4 OR ")
+                .append("tags:(").append(requestQuery).append("*)^2 OR ")
+                .append("description:(").append(requestQuery).append("*)")
                 .append(pagingDriverEnd);
-         
+        
         BoundStatement stmt = findVideosByTags.bind().setString("solr_query", solrQuery.toString());
         pagingState.ifPresent( x -> stmt.setPagingState(PagingState.fromString(x)));
         stmt.setFetchSize(fetchSize);

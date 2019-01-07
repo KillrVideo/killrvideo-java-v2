@@ -19,7 +19,7 @@ killrvideo:
     delayBetweenTries: 2
 
   search:
-    ignoredWords: and,or,but,nor,so,for,yet,after,as,till,to,the,at,in,not,of,this,an,are,by,is,it,on,why,i,a,be,can,these,that,they,had,do
+    ignoredWords: and,or,but,nor,so,for,yet,after,as,till,to,the,at,in,not,now,of,if,this,an,are,all,about,along,by,is,it,on,why,be,can,com,get,out,see,some,new,these,that,thing,things,wish,known,say,they,had,here,like,live,let,do,with,what,when,www,watch,will,http,https,us,you,your,more,his,her,they,them,their,me,we,near,bit,ly,back,meet,know,key,video,various,find,only,from,kind,channel,comments,below,check,right,full,while,gets,up,each,no,buy,a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z
 
   graph:
     timeout: 3000

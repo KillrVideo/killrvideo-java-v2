@@ -56,6 +56,9 @@
 		<protobuf.java.version>3.5.1</protobuf.java.version>
 		<protoc-gen-grpc.version>1.10.0</protoc-gen-grpc.version>
 		<spring-boot-grpc.version>2.1.5</spring-boot-grpc.version>
+		
+		<!-- kafka -->
+		<kafka-connect.version>2.1.0</kafka-connect.version>
 
 		<!-- Test -->
 		<cassandra-unit.version>3.3.0.2</cassandra-unit.version>
@@ -172,9 +175,18 @@
 				<artifactId>commons-collections4</artifactId>
 				<version>${commons-collections.version}</version>
 			</dependency>
-			<!-- NOT ready for grpc1.10 <dependency> <groupId>org.lognet</groupId> 
-				<artifactId>grpc-spring-boot-starter</artifactId> <version>${spring-boot-grpc.version}</version> 
-				</dependency> -->
+		
+			<!-- Kafka -->
+			<dependency>
+				<groupId>org.apache.kafka</groupId>
+				<artifactId>connect-api</artifactId>
+				<version>${kafka-connect.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.apache.kafka</groupId>
+				<artifactId>connect-json</artifactId>
+				<version>${kafka-connect.version}</version>
+			</dependency>
 
 			<!-- ETCD Service Discovery -->
 			<dependency>

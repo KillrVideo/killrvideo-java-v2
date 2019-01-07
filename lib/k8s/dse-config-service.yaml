@@ -6,8 +6,8 @@ metadata:
     kompose.version: 1.10.0 ()
   creationTimestamp: null
   labels:
-    io.kompose.service: registrator
-  name: registrator
+    io.kompose.service: dse-config
+  name: dse-config
 spec:
   clusterIP: None
   ports:
@@ -15,6 +15,6 @@ spec:
     port: 55555
     targetPort: 0
   selector:
-    io.kompose.service: registrator
+    io.kompose.service: dse-config
 status:
   loadBalancer: {}

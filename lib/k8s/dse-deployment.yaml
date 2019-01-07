@@ -2,7 +2,7 @@ apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
   annotations:
-    kompose.cmd: kompose -f ./lib/killrvideo-docker-common/docker-compose.yaml convert
+    kompose.cmd: kompose convert -f ./docker-compose.yaml
     kompose.version: 1.10.0 ()
   creationTimestamp: null
   labels:
@@ -23,13 +23,7 @@ spec:
         env:
         - name: DS_LICENSE
           value: accept
-        - name: SERVICE_8182_NAME
-          value: gremlin
-        - name: SERVICE_8983_NAME
-          value: dse-search
-        - name: SERVICE_9042_NAME
-          value: cassandra
-        image: killrvideo/killrvideo-dse:4.1.0
+        image: datastax/dse-server:6.7.0
         name: dse
         ports:
         - containerPort: 9042
