@@ -1,0 +1,80 @@
+#========================================
+#===   killrvideo-service-comments    ===
+#========================================
+
+application: 
+    name: killrvideo-service-comments
+
+spring:
+  output:
+    ansi:
+      enabled: ALWAYS
+
+killrvideo:
+  
+  ##
+  # Service discovery : 
+  # - Locally will register and lookup etcd to allow dynamic scaling
+  # - With Kubernetes use the service name and no lookup
+  ##
+  etcd:
+    enabled: true
+    host: 10.0.75.1
+    port: 2379
+    maxNumberOfTries: 30
+    delayBetweenTries: 5
+
+  ##
+  # GRPC
+  # - Default port for this microservice, will be inc by one if needed for each start (ETCD)
+  # - In Kubernetes, will always uswe the default port expose by service,
+  ##   
+  grpc-server: 
+    port: 30100
+      
+  ##
+  # Connectivity to DSE
+  # - Retry mecanism allow to sync containers startups
+  # - With Kubernetes use the service name and no lookup
+  ##  
+  cassandra:
+    maxNumberOfTries: 10
+    delayBetweenTries: 2
+    clustername: killrvideo
+    mutation-error-log: /tmp/killrvideo-mutation-errors.log
+  
+  ssl:
+      enable: false
+      CACertFileLocation: cassandra.cert
+
+  search:
+    ignoredWords: and,or,but,nor,so,for,yet,after,as,till,to,the,at,in,not,now,of,if,this,an,are,all,about,along,by,is,it,on,why,be,can,com,get,out,see,some,new,these,that,thing,things,wish,known,say,they,had,here,like,live,let,do,with,what,when,www,watch,will,http,https,us,you,your,more,his,her,they,them,their,me,we,near,bit,ly,back,meet,know,key,video,various,find,only,from,kind,channel,comments,below,check,right,full,while,gets,up,each,no,buy,a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z
+
+  graph:
+    timeout: 3000
+    recommendation.name: killrvideo_video_recommendations
+    
+  ssl:
+    enable: false
+    CACertFileLocation: cassandra.cert
+      
+  ##
+  # Messaging
+  # - Will be Kafka if microservices
+  ##
+  messaging:
+    transport: kafka 
+    kafka:
+      ack: 1
+      consumerGroup: killrvideo
+      topics:
+        errors: topic-kv-errors
+        videoRated: topic-kv-videoRating
+        commentCreated: topic-kv-commentCreation
+        userCreated: topic-kv-userCreation
+        youTubeVideoAdded: topic-kv-videoCreation
+    inmemory:
+      minThreads: 5
+      maxThreads: 10
+      ttlThreads: 60
+      queueSize: 1000  

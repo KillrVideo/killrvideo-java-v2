@@ -26,11 +26,15 @@
 	<!-- ~ CHILDREN MODULES ~ -->
 	<!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
 	<modules>
-		<module>killrvideo-core</module>
-		<module>killrvideo-dse</module>
-		<module>killrvideo-messaging</module>
-		<module>killrvideo-api-grpc</module>
-		<module>killrvideo-api-grpc-test</module>
+		<module>killrvideo-commons</module>
+		<module>killrvideo-service-comments</module>
+		<module>killrvideo-service-ratings</module>
+		<module>killrvideo-service-search</module>
+		<module>killrvideo-service-statistics</module>
+		<module>killrvideo-service-users</module>
+		<module>killrvideo-service-videocatalog</module>
+		<module>killrvideo-service-sugestedvideo</module>
+		<module>killrvideo-services</module>
 	</modules>
 
 	<!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
