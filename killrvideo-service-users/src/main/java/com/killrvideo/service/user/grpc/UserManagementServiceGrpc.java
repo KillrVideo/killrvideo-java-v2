@@ -17,6 +17,7 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -54,6 +55,7 @@ public class UserManagementServiceGrpc extends UserManagementServiceImplBase {
     public static final String USER_SERVICE_NAME = "UserManagementService";
      
     @Autowired
+    @Qualifier("killrvideo.dao.messaging.kafka")
     private MessagingDao messagingDao;
     
     @Value("${killrvideo.messaging.kafka.topics.userCreated : topic-kv-userCreation}")

@@ -32,7 +32,7 @@ public interface MessagingDao {
      */
     default void sendErrorEvent(String serviceName, Throwable t) {
         sendEvent(getErrorDestination(), mapError(t));
-    }
+    } 
    
     /**
      * Send error event to bus.

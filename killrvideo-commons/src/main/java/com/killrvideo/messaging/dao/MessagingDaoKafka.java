@@ -1,5 +1,6 @@
 package com.killrvideo.messaging.dao;
 
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.time.Duration;
@@ -15,6 +16,7 @@ import org.apache.kafka.clients.producer.ProducerRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Repository;
 
@@ -40,6 +42,7 @@ public class MessagingDaoKafka implements MessagingDao {
     
     /** Common error processing from topic topic-kv-errors. */
     @Autowired
+    @Qualifier("kafka.consumer.error")
     private KafkaConsumer<String, byte[]> errorLogger;
     
     @Autowired

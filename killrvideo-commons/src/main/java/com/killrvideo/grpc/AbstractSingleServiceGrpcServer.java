@@ -10,7 +10,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import com.killrvideo.conf.KillrVideoConfiguration;
-import com.killrvideo.etcd.EtcdDao;
+import com.killrvideo.discovery.ServiceDiscoveryDaoEtcd;
 
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
@@ -32,7 +32,7 @@ public abstract class AbstractSingleServiceGrpcServer {
     
     /** Connectivity to ETCD Service discovery. */
     @Autowired
-    protected EtcdDao serviceDiscoveryDao;
+    protected ServiceDiscoveryDaoEtcd serviceDiscoveryDao;
     
     /** GRPC Server to start. */
     protected Server grpcServer;
@@ -53,10 +53,10 @@ public abstract class AbstractSingleServiceGrpcServer {
      * Start
      */
     @PostConstruct
-    public void start() throws Exception {
+    public void startGrpcServer() throws Exception {
         LOGGER.info("Initializing Comment Service");
         grpcServerPort = getDefaultPort();
-        Optional<Integer> maxUsedPort = serviceDiscoveryDao.getMaxPort(getServiceName(), 
+        Optional<Integer> maxUsedPort = serviceDiscoveryDao.lookupServicePorts(getServiceName(), 
                 killrVideoConfig.getApplicationHost());
         if (maxUsedPort.isPresent()) {
             grpcServerPort = maxUsedPort.get() + 1;
@@ -66,24 +66,24 @@ public abstract class AbstractSingleServiceGrpcServer {
                               .build();
         Runtime.getRuntime().addShutdownHook(new Thread() {
                 public void run() {
-                    LOGGER.info("Calling shutdown for GrpcServer");
-                    serviceDiscoveryDao.unRegisterServiceEnpoint(
-                            getServiceName(),  
-                            killrVideoConfig.getApplicationHost(), 
-                            grpcServerPort);
-                    grpcServer.shutdown();
+                    stopGrpcServer();
                 }
-            });
+        });
         grpcServer.start();
         LOGGER.info("[OK] Grpc Server started on port: '{}'", grpcServerPort);
-        serviceDiscoveryDao.registerServiceEndpoint(
+        serviceDiscoveryDao.registerService(
                 getServiceName(),  
                 killrVideoConfig.getApplicationHost(), 
                 grpcServerPort);
     }
     
     @PreDestroy
-    public void stop() {
+    public void stopGrpcServer() {
+        LOGGER.info("Calling shutdown for GrpcServer");
+        serviceDiscoveryDao.unRegisterService(
+                getServiceName(), 
+                killrVideoConfig.getApplicationHost(), 
+                grpcServerPort);
         grpcServer.shutdown();
     }
     

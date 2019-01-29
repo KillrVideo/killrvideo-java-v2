@@ -57,10 +57,10 @@ public class CommentsServiceGrpc extends CommentsServiceImplBase {
     
     /** Inter-service communications (messaging). */
     @Autowired
-    @Qualifier("messaging.kafka")
+    @Qualifier("killrvideo.dao.messaging.kafka")
     private MessagingDao messagingDao;
     
-    @Value("${kafka.topics.commentCreation : topic-kv-commentCreation}")
+    @Value("${killrvideo.messaging.kafka.topics.commentCreation : topic-kv-commentCreation}")
     private String topicCommentCreation;
   
     /** {@inheritDoc} */

@@ -24,16 +24,14 @@
     <!-- ~ DEPENDENCIES             ~ -->
     <!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
     <dependencies>
-    
-       <!-- Killrvideo Services -->
        <dependency>
        	 <groupId>com.datastax</groupId>
-       	 <artifactId>killrvideo-service-comments</artifactId>
+       	 <artifactId>killrvideo-service-ratings</artifactId>
        	 <version>${project.version}</version>
        </dependency>
        <dependency>
        	 <groupId>com.datastax</groupId>
-       	 <artifactId>killrvideo-service-ratings</artifactId>
+       	 <artifactId>killrvideo-service-comments</artifactId>
        	 <version>${project.version}</version>
        </dependency>
        <dependency>
@@ -61,12 +59,10 @@
        	 <artifactId>killrvideo-service-videocatalog</artifactId>
        	 <version>${project.version}</version>
        </dependency>
-       
-        <dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter</artifactId>
-		</dependency>
-       
+       <dependency>
+	     <groupId>org.springframework.boot</groupId>
+		  <artifactId>spring-boot-starter</artifactId>
+	   </dependency>
     </dependencies>
 
 	<!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
@@ -74,7 +70,6 @@
     <!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
 	<build>
 		<plugins>
-		
             <plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>

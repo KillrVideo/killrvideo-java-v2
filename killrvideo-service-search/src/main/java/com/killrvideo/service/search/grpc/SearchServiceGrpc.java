@@ -13,11 +13,12 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 import com.killrvideo.dse.dto.ResultListPage;
 import com.killrvideo.dse.dto.Video;
-import com.killrvideo.messaging.dao.MessagingDaoInMemory;
+import com.killrvideo.messaging.dao.MessagingDao;
 import com.killrvideo.service.search.dao.SearchDseDao;
 
 import io.grpc.Status;
@@ -46,7 +47,8 @@ public class SearchServiceGrpc extends SearchServiceImplBase {
     private SearchDseDao dseSearchDao;
     
     @Autowired
-    private MessagingDaoInMemory messagingDao;
+    @Qualifier("killrvideo.dao.messaging.kafka")
+    private MessagingDao messagingDao;
    
     /** {@inheritDoc} */
     @Override

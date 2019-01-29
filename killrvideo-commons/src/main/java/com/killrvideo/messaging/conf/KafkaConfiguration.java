@@ -21,7 +21,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import com.killrvideo.etcd.EtcdDao;
+import com.killrvideo.discovery.ServiceDiscoveryDaoEtcd;
 
 /**
  * Use Kafka to exchange messages between services. 
@@ -47,7 +47,7 @@ public class KafkaConfiguration {
     private String consumerGroup;
     
     @Autowired
-    private EtcdDao etcdDao;
+    private ServiceDiscoveryDaoEtcd etcdDao;
     
     /**
      * Should we init connection with ETCD or direct.
@@ -59,7 +59,7 @@ public class KafkaConfiguration {
         if (null == kafkaServer) {
             kafkaServer = SERVICE_KAFKA + ":" + 8082; 
             if (etcdLookup) { 
-                kafkaServer = String.join(",", etcdDao.listServiceEndpoints(SERVICE_KAFKA));
+                kafkaServer = String.join(",", etcdDao.lookupService(SERVICE_KAFKA));
             }  
         } 
         return kafkaServer;
@@ -97,6 +97,16 @@ public class KafkaConfiguration {
     
     @Bean("kafka.consumer.videoCreating")
     public KafkaConsumer<String, byte[]> videoCreatingConsumer() {
+        Properties props = new Properties();
+        props.put(BOOTSTRAP_SERVERS_CONFIG,        getKafkaServerConnectionUrl());
+        props.put(GROUP_ID_CONFIG,                 consumerGroup);
+        props.put(KEY_DESERIALIZER_CLASS_CONFIG,   StringDeserializer.class.getName());
+        props.put(VALUE_DESERIALIZER_CLASS_CONFIG, BytesDeserializer.class.getName());
+        return new KafkaConsumer<String,byte[]>(props);
+    }
+    
+    @Bean("kafka.consumer.error")
+    public KafkaConsumer<String, byte[]> errorConsumer() {
         Properties props = new Properties();
         props.put(BOOTSTRAP_SERVERS_CONFIG,        getKafkaServerConnectionUrl());
         props.put(GROUP_ID_CONFIG,                 consumerGroup);

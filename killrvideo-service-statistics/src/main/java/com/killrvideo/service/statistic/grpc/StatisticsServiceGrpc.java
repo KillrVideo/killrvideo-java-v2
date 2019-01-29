@@ -14,6 +14,7 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 import com.killrvideo.messaging.dao.MessagingDao;
@@ -44,6 +45,7 @@ public class StatisticsServiceGrpc extends StatisticsServiceImplBase {
     public static final String STATISTICS_SERVICE_NAME = "StatisticsService";
   
     @Autowired
+    @Qualifier("killrvideo.dao.messaging.kafka")
     private MessagingDao messagingDao;
     
     @Autowired

@@ -37,11 +37,13 @@ import com.datastax.driver.mapping.MappingConfiguration;
 import com.datastax.driver.mapping.MappingManager;
 import com.datastax.driver.mapping.PropertyMapper;
 import com.datastax.driver.mapping.PropertyTransienceStrategy;
+import com.datastax.dse.graph.api.DseGraph;
 import com.evanlennick.retry4j.CallExecutor;
 import com.evanlennick.retry4j.config.RetryConfig;
 import com.evanlennick.retry4j.config.RetryConfigBuilder;
+import com.killrvideo.discovery.ServiceDiscoveryDaoEtcd;
+import com.killrvideo.dse.graph.KillrVideoTraversalSource;
 import com.killrvideo.dse.utils.BlobToStringCodec;
-import com.killrvideo.etcd.EtcdDao;
 import com.killrvideo.model.CommonConstants;
 
 import io.netty.handler.ssl.SslContext;
@@ -95,7 +97,7 @@ public class DseConfiguration {
     private boolean etcdLookup = false;
     
     @Autowired
-    private EtcdDao etcdDao;
+    private ServiceDiscoveryDaoEtcd etcdDao;
     
     @Bean
     public DseSession initializeDSE() {
@@ -170,6 +172,19 @@ public class DseConfiguration {
     }
     
     /**
+     * Graph Traversal for suggested videos.
+     *
+     * @param session
+     *      current dse session.
+     * @return
+     *      traversal
+     */
+    @Bean
+    public KillrVideoTraversalSource initializeGraphTraversalSource(DseSession session) {
+        return DseGraph.traversal(session, KillrVideoTraversalSource.class);
+    }
+    
+    /**
      * Retrieve cluster nodes adresses (eg:node1:9042) from ETCD and initialize the `contact points`,
      * endpoints of Cassandra cluster nodes.
      * 
@@ -215,7 +230,7 @@ public class DseConfiguration {
      private void populateContactPoints(Builder clusterConfig)  {
         if (etcdLookup) {
            LOGGER.info(" + Reading node addresses from ETCD.");
-           etcdDao.listServiceEndpoints("cassandra")
+           etcdDao.lookupService("cassandra")
                   .stream()
                   .map(this::asSocketInetAdress)
                   .filter(node -> node.isPresent())

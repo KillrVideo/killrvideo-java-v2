@@ -15,12 +15,31 @@ services:
     depends_on:
     - zookeeper
     environment:
-      KAFKA_ADVERTISED_HOST_NAME: localhost
+      KAFKA_ADVERTISED_HOST_NAME: 10.0.75.1
       KAFKA_ADVERTISED_PORT: 9092
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
       KAFKA_CREATE_TOPICS: "topic-kv-videoCreation:1:1,topic-kv-userCreation:1:1,topic-kv-videoRating:1:1"
     ports:
     - 9092:9092
+
+  kafkahq:
+    image: tchiotludo/kafkahq
+    environment:
+      KAFKAHQ_CONFIGURATION: |
+        {
+          kafka {
+            connections {
+              docker-kafka-server {
+                  bootstrap.servers: "10.0.75.1:9092"
+              }
+            }
+          }
+        }
+    ports:
+      - "8080:8080"
+    depends_on:
+      - kafka
+    
 
   # Start the KillrVideo web UI on port 3000
   web:
@@ -63,4 +82,3 @@ services:
     environment:
       SERVICE_9091_NAME: studio
       DS_LICENSE: accept
-
