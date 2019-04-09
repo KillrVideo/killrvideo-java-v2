@@ -239,6 +239,7 @@ public interface KillrVideoTraversalDsl<S, E> extends GraphTraversal.Admin<S, E>
      * engine hackathon team for coming up with the following traversal and passing on some
      * working code for me to start with.
      */
+    @SuppressWarnings("deprecation")
     public default GraphTraversal<S, Map<String, Object>> recommendByUserRating(
             int recommendations, int minRating, int numRatingsToSample, int localUserRatingsToSample)  {
         Assert.isTrue(recommendations > 0, "recommendations must be greater than zero");

@@ -7,7 +7,6 @@ import static com.killrvideo.service.comment.grpc.CommentsServiceGrpcMapper.mapF
 import static com.killrvideo.service.comment.grpc.CommentsServiceGrpcMapper.validateGrpcRequest_GetUserComments;
 import static com.killrvideo.service.comment.grpc.CommentsServiceGrpcValidator.validateGrpcRequestCommentOnVideo;
 import static com.killrvideo.service.comment.grpc.CommentsServiceGrpcValidator.validateGrpcRequestGetVideoComment;
-import static com.killrvideo.utils.GrpcMappingUtils.instantToTimeStamp;
 import static java.util.UUID.fromString;
 
 import java.time.Duration;
@@ -35,7 +34,6 @@ import killrvideo.comments.CommentsServiceOuterClass.GetUserCommentsRequest;
 import killrvideo.comments.CommentsServiceOuterClass.GetUserCommentsResponse;
 import killrvideo.comments.CommentsServiceOuterClass.GetVideoCommentsRequest;
 import killrvideo.comments.CommentsServiceOuterClass.GetVideoCommentsResponse;
-import killrvideo.comments.events.CommentsEvents.UserCommentedOnVideo;
 
 /**
  * Exposition of comment services with GPRC Technology & Protobuf Interface
@@ -91,13 +89,13 @@ public class CommentsServiceGrpc extends CommentsServiceImplBase {
                 grpcResObserver.onError(Status.INTERNAL.withCause(error).asRuntimeException());
             } else {
                 traceSuccess("commentOnVideo", starts);
-                messagingDao.sendEvent(topicCommentCreation, 
+                /*messagingDao.sendEvent(topicCommentCreation, 
                         UserCommentedOnVideo.newBuilder()
                             .setCommentId(grpcReq.getCommentId())
                             .setVideoId(grpcReq.getVideoId())
                             .setUserId(grpcReq.getUserId())
                             .setCommentTimestamp(instantToTimeStamp(Instant.now()))
-                            .build());
+                            .build());*/
                 grpcResObserver.onNext(CommentOnVideoResponse.newBuilder().build());
                 grpcResObserver.onCompleted();
             }

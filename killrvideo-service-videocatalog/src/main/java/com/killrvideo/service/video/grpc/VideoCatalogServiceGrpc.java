@@ -28,12 +28,14 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import com.google.common.util.concurrent.ListenableFuture;
 import com.google.protobuf.Timestamp;
 import com.killrvideo.dse.dto.CustomPagingState;
 import com.killrvideo.dse.dto.Video;
 import com.killrvideo.messaging.dao.MessagingDao;
 import com.killrvideo.service.video.dao.VideoCatalogDseDao;
 import com.killrvideo.service.video.dto.LatestVideosPage;
+import com.killrvideo.utils.FutureUtils;
 import com.killrvideo.utils.GrpcMappingUtils;
 
 import io.grpc.Status;
@@ -78,6 +80,7 @@ public class VideoCatalogServiceGrpc extends VideoCatalogServiceImplBase {
     private VideoCatalogDseDao videoCatalogDao;
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override
     public void submitYouTubeVideo(SubmitYouTubeVideoRequest grpcReq, StreamObserver<SubmitYouTubeVideoResponse> grpcResObserver) {
         
@@ -94,24 +97,30 @@ public class VideoCatalogServiceGrpc extends VideoCatalogServiceImplBase {
         }
         
         // Execute query (ASYNC)
-        CompletableFuture<Void> future = videoCatalogDao.insertVideoAsync(video);
+        CompletableFuture<Void> futureDse = videoCatalogDao.insertVideoAsync(video);
+       
+        // Then, if OK send Message to Kafka
+        CompletableFuture<Object> futureAndKafka = futureDse.thenCompose(rs -> {
+            return FutureUtils.asCompletableFuture((ListenableFuture<Object>) 
+                    messagingDao.sendEvent(topicVideoCreated, YouTubeVideoAdded.newBuilder()
+                            .setAddedDate(Timestamp.newBuilder().build())
+                            .setDescription(video.getDescription())
+                            .setLocation(video.getLocation())
+                            .setName(video.getName())
+                            .setPreviewImageLocation(video.getPreviewImageLocation())
+                            .setUserId(GrpcMappingUtils.uuidToUuid(video.getUserid()))
+                            .setVideoId(GrpcMappingUtils.uuidToUuid(video.getVideoid()))
+                            .build()));
+        });     
         
         // Building Response
-        future.whenComplete((result, error) -> { 
+        futureAndKafka.whenComplete((result, error) -> { 
             if (error != null ) {
                 traceError("submitYouTubeVideo", starts, error);
                 messagingDao.sendErrorEvent(VIDEOCATALOG_SERVICE_NAME, error);
                 grpcResObserver.onError(Status.INTERNAL.withCause(error).asRuntimeException());
             } else {
                 traceSuccess("submitYouTubeVideo", starts);
-                messagingDao.sendEvent(topicVideoCreated, YouTubeVideoAdded.newBuilder()
-                        .setAddedDate(Timestamp.newBuilder().build())
-                        .setDescription(video.getDescription())
-                        .setLocation(video.getLocation())
-                        .setName(video.getName())
-                        .setPreviewImageLocation(video.getPreviewImageLocation())
-                        .setUserId(GrpcMappingUtils.uuidToUuid(video.getUserid()))
-                        .setVideoId(GrpcMappingUtils.uuidToUuid(video.getVideoid())));
                 grpcResObserver.onNext(SubmitYouTubeVideoResponse.newBuilder().build());
                 grpcResObserver.onCompleted();
             }

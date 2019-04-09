@@ -19,8 +19,10 @@ import java.util.stream.LongStream;
 import javax.annotation.PostConstruct;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.kafka.clients.producer.KafkaProducer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 import org.springframework.util.Assert;
 
@@ -43,6 +45,7 @@ import com.killrvideo.dse.dto.Video;
 import com.killrvideo.service.video.dto.LatestVideo;
 import com.killrvideo.service.video.dto.LatestVideosPage;
 import com.killrvideo.service.video.dto.UserVideo;
+import com.killrvideo.utils.FutureUtils;
 
 /**
  * Implementations of operation for Videos.
@@ -182,6 +185,9 @@ public class VideoCatalogDseDao extends DseDaoSupport {
                         .map(x -> x.format(VideoCatalogDseDao.DATEFORMATTER))
                         .collect(Collectors.toList()));
     }
+    
+    @Autowired
+    protected KafkaProducer<String, byte[]> protobufProducer;
    
     /**
      * Insert a VIDEO in the DB (ASYNC).
@@ -189,7 +195,6 @@ public class VideoCatalogDseDao extends DseDaoSupport {
     public CompletableFuture<Void> insertVideoAsync(Video v) {
         CompletableFuture<Void> cfv = new CompletableFuture<>();
         Futures.addCallback(dseSession.executeAsync(createStatementInsertVideo(v)), new FutureCallback<ResultSet>() {
-            
             // Propagation exception to handle it in the EXPOSITION LAYER. 
             public void onFailure(Throwable ex) { cfv.completeExceptionally(ex); }
             
@@ -200,7 +205,7 @@ public class VideoCatalogDseDao extends DseDaoSupport {
     }
     
     public CompletableFuture<Video> getVideoById(UUID videoid) {
-        return asCompletableFuture(videoMapper.getAsync(videoid));
+        return FutureUtils.asCompletableFuture(videoMapper.getAsync(videoid));
     }
     
     public CompletableFuture<List<Video>> getVideoPreview(List<UUID> listofVideoId) {
@@ -209,7 +214,7 @@ public class VideoCatalogDseDao extends DseDaoSupport {
         // Create a future for each entry
         final List<CompletableFuture<Video>> futureList = listofVideoId.stream()
                       .map(videoMapper::getAsync)
-                      .map(this::asCompletableFuture)
+                      .map(FutureUtils::asCompletableFuture)
                       .collect(Collectors.toList());
 
         // List <Future> => Future<List> ! Amazing
@@ -267,8 +272,8 @@ public class VideoCatalogDseDao extends DseDaoSupport {
         pagingState.ifPresent( x -> bound.setPagingState(PagingState.fromString(x)));
         
         // Execute Query
-        return asCompletableFuture(userVideosMapper.mapAsync(dseSession.executeAsync(bound)))
-                .< ResultListPage<UserVideo> > thenApply(ResultListPage::new);
+        return FutureUtils.asCompletableFuture(userVideosMapper.mapAsync(dseSession.executeAsync(bound)))
+                          .< ResultListPage<UserVideo> > thenApply(ResultListPage::new);
     }
     
     /**

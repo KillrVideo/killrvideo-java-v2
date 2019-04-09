@@ -12,8 +12,9 @@ import java.util.Properties;
 
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.common.serialization.ByteArrayDeserializer;
+import org.apache.kafka.common.serialization.ByteArraySerializer;
 import org.apache.kafka.common.serialization.BytesDeserializer;
-import org.apache.kafka.common.serialization.BytesSerializer;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -70,7 +71,7 @@ public class KafkaConfiguration {
         Properties props = new Properties();
         props.put(BOOTSTRAP_SERVERS_CONFIG,      getKafkaServerConnectionUrl());
         props.put(KEY_SERIALIZER_CLASS_CONFIG,   StringSerializer.class.getName());
-        props.put(VALUE_SERIALIZER_CLASS_CONFIG, BytesSerializer.class.getName());
+        props.put(VALUE_SERIALIZER_CLASS_CONFIG, ByteArraySerializer.class.getName());
         props.put(ACKS_CONFIG,                   producerAck);
         return new KafkaProducer<String, byte[]>(props);
     }
@@ -81,7 +82,7 @@ public class KafkaConfiguration {
         props.put(BOOTSTRAP_SERVERS_CONFIG,        getKafkaServerConnectionUrl());
         props.put(GROUP_ID_CONFIG,                 consumerGroup);
         props.put(KEY_DESERIALIZER_CLASS_CONFIG,   StringDeserializer.class.getName());
-        props.put(VALUE_DESERIALIZER_CLASS_CONFIG, BytesDeserializer.class.getName());
+        props.put(VALUE_DESERIALIZER_CLASS_CONFIG, ByteArrayDeserializer.class.getName());
         return new KafkaConsumer<String,byte[]>(props);
     }
     
@@ -91,7 +92,7 @@ public class KafkaConfiguration {
         props.put(BOOTSTRAP_SERVERS_CONFIG,        getKafkaServerConnectionUrl());
         props.put(GROUP_ID_CONFIG,                 consumerGroup);
         props.put(KEY_DESERIALIZER_CLASS_CONFIG,   StringDeserializer.class.getName());
-        props.put(VALUE_DESERIALIZER_CLASS_CONFIG, BytesDeserializer.class.getName());
+        props.put(VALUE_DESERIALIZER_CLASS_CONFIG, ByteArrayDeserializer.class.getName());
         return new KafkaConsumer<String,byte[]>(props);
     }
     
@@ -101,7 +102,7 @@ public class KafkaConfiguration {
         props.put(BOOTSTRAP_SERVERS_CONFIG,        getKafkaServerConnectionUrl());
         props.put(GROUP_ID_CONFIG,                 consumerGroup);
         props.put(KEY_DESERIALIZER_CLASS_CONFIG,   StringDeserializer.class.getName());
-        props.put(VALUE_DESERIALIZER_CLASS_CONFIG, BytesDeserializer.class.getName());
+        props.put(VALUE_DESERIALIZER_CLASS_CONFIG, ByteArrayDeserializer.class.getName());
         return new KafkaConsumer<String,byte[]>(props);
     }
     
@@ -111,7 +112,7 @@ public class KafkaConfiguration {
         props.put(BOOTSTRAP_SERVERS_CONFIG,        getKafkaServerConnectionUrl());
         props.put(GROUP_ID_CONFIG,                 consumerGroup);
         props.put(KEY_DESERIALIZER_CLASS_CONFIG,   StringDeserializer.class.getName());
-        props.put(VALUE_DESERIALIZER_CLASS_CONFIG, BytesDeserializer.class.getName());
+        props.put(VALUE_DESERIALIZER_CLASS_CONFIG, ByteArrayDeserializer.class.getName());
         return new KafkaConsumer<String,byte[]>(props);
     }
     

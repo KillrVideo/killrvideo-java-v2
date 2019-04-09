@@ -1,5 +1,8 @@
 package com.killrvideo.messaging.dao;
 
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Future;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,11 +26,12 @@ public class MessagingDaoInMemory implements MessagingDao {
     
     /** {@inheritDoc} */
     @Override
-    public void sendEvent(String targetDestination, Object event) {
+    public Future<Object> sendEvent(String targetDestination, Object event) {
         if (event != null) {
             LOGGER.info("Publishing eventtype{} to destination {} ", event.getClass().getName(), targetDestination);
             eventBus.post(event);
         }
+        return new CompletableFuture<>();
     }
 
     @Override

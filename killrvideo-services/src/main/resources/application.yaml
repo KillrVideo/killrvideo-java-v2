@@ -11,6 +11,15 @@ killrvideo:
     name: killrvideo
     instance: 
       id: 0
+      
+  service:
+    comment:        true
+    rating:         true
+    search:         true
+    statistic:      true
+    videoCatalog:   true
+    user:           true
+    suggestedVideo: true
     
   cassandra:
     clustername: killrvideo
@@ -31,20 +40,30 @@ killrvideo:
     
   grpc-server: 
     port: 8899
-  
-  kafka:
-    server: localhost:9092
-    ack: 1
-    consumerGroup: killrvideo
      
   etcd:
     host: 10.0.75.1
     port: 2379
     maxNumberOfTries: 30
-    delayBetweenTries: 5
-    
-  threadpool:
-    minThreads: 5
-    maxThreads: 10
-    ttlThreads: 60
-    queueSize: 1000  
+
+  ##
+  # Messaging
+  # - Will be Kafka if microservices
+  ##
+  messaging:
+    transport: kafka 
+    kafka:
+      ack: 1
+      consumerGroup: killrvideo
+      topics:
+        errors: topic-kv-errors
+        videoRated: topic-kv-videoRating
+        commentCreated: topic-kv-commentCreation
+        userCreated: topic-kv-userCreation
+        youTubeVideoAdded: topic-kv-videoCreation
+    inmemory:
+      minThreads: 5
+      maxThreads: 10
+      ttlThreads: 60
+      queueSize: 1000
+          

@@ -1,76 +1,81 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    
-    <!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
-    <!-- ~    MVN Coordonates       ~ -->
-    <!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
-    <modelVersion>4.0.0</modelVersion>
-    <artifactId>killrvideo-services</artifactId>
-    <name> + killrvideo-services</name>
-    <description>Service Comments</description>
-    
-    <!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
-	<!-- ~ Parent                   ~ -->
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+	<!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+	<!-- ~ MVN Coordonates ~ -->
+	<!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+	<modelVersion>4.0.0</modelVersion>
+	<artifactId>killrvideo-services</artifactId>
+	<name> + killrvideo-services</name>
+	<description>Service Comments</description>
+
+	<!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+	<!-- ~ Parent ~ -->
 	<!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
 	<parent>
 		<groupId>com.datastax</groupId>
 		<artifactId>killrvideo-parent</artifactId>
 		<version>6.7.0</version>
-	</parent>
-   
-    <!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
-    <!-- ~ DEPENDENCIES             ~ -->
-    <!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
-    <dependencies>
-       <dependency>
-       	 <groupId>com.datastax</groupId>
-       	 <artifactId>killrvideo-service-ratings</artifactId>
-       	 <version>${project.version}</version>
-       </dependency>
-       <dependency>
-       	 <groupId>com.datastax</groupId>
-       	 <artifactId>killrvideo-service-comments</artifactId>
-       	 <version>${project.version}</version>
-       </dependency>
-       <dependency>
-       	 <groupId>com.datastax</groupId>
-       	 <artifactId>killrvideo-service-search</artifactId>
-       	 <version>${project.version}</version>
-       </dependency>
-       <dependency>
-       	 <groupId>com.datastax</groupId>
-       	 <artifactId>killrvideo-service-statistics</artifactId>
-       	 <version>${project.version}</version>
-       </dependency>
-       <dependency>
-       	 <groupId>com.datastax</groupId>
-       	 <artifactId>killrvideo-service-sugestedvideo</artifactId>
-       	 <version>${project.version}</version>
-       </dependency>
-       <dependency>
-       	 <groupId>com.datastax</groupId>
-       	 <artifactId>killrvideo-service-users</artifactId>
-       	 <version>${project.version}</version>
-       </dependency>
-         <dependency>
-       	 <groupId>com.datastax</groupId>
-       	 <artifactId>killrvideo-service-videocatalog</artifactId>
-       	 <version>${project.version}</version>
-       </dependency>
-       <dependency>
-	     <groupId>org.springframework.boot</groupId>
-		  <artifactId>spring-boot-starter</artifactId>
-	   </dependency>
-    </dependencies>
+	</parent>	
 
 	<!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
-    <!-- ~        BUILD             ~ -->
-    <!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+	<!-- ~ DEPENDENCIES ~ -->
+	<!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+	<dependencies>
+		<dependency>
+			<groupId>com.datastax</groupId>
+			<artifactId>killrvideo-service-ratings</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.datastax</groupId>
+			<artifactId>killrvideo-service-comments</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.datastax</groupId>
+			<artifactId>killrvideo-service-search</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.datastax</groupId>
+			<artifactId>killrvideo-service-statistics</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.datastax</groupId>
+			<artifactId>killrvideo-service-sugestedvideo</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.datastax</groupId>
+			<artifactId>killrvideo-service-users</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.datastax</groupId>
+			<artifactId>killrvideo-service-videocatalog</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+		</dependency>
+		
+	</dependencies>
+
+	<!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+	<!-- ~ BUILD ~ -->
+	<!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
 	<build>
 		<plugins>
-            <plugin>
+			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
 				<version>${spring-boot.version}</version>
@@ -85,7 +90,7 @@
 					</execution>
 				</executions>
 			</plugin>
-            
+
 		</plugins>
 	</build>
 

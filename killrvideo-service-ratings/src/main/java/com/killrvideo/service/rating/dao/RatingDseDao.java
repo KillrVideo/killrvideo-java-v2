@@ -20,6 +20,7 @@ import com.datastax.driver.mapping.Mapper;
 import com.killrvideo.dse.dao.DseDaoSupport;
 import com.killrvideo.service.rating.dto.VideoRating;
 import com.killrvideo.service.rating.dto.VideoRatingByUser;
+import com.killrvideo.utils.FutureUtils;
 
 /**
  * Implementations of operation for Videos.
@@ -119,9 +120,9 @@ public class RatingDseDao extends DseDaoSupport {
          * mapper will prepare the statement for you automagically.
          */
         return CompletableFuture.allOf(
-                asCompletableFuture(dseSession.executeAsync(statement)),
+                FutureUtils.asCompletableFuture(dseSession.executeAsync(statement)),
                 // asCompletableFuture(dseSession.executeAsync(mapperVideoRatingByUser.saveQuery(entity))),
-                asCompletableFuture(mapperVideoRatingByUser.saveAsync(entity)));
+                FutureUtils.asCompletableFuture(mapperVideoRatingByUser.saveAsync(entity)));
     }
     
     /**
@@ -134,7 +135,7 @@ public class RatingDseDao extends DseDaoSupport {
      */
     public CompletableFuture< Optional < VideoRating > > findRating(UUID videoId) {
         assertNotNull("findRating", "videoId", videoId);
-        return asCompletableFuture(mapperVideoRating.getAsync(videoId)).thenApplyAsync(Optional::ofNullable);
+        return FutureUtils.asCompletableFuture(mapperVideoRating.getAsync(videoId)).thenApplyAsync(Optional::ofNullable);
     }
     
     /**
@@ -150,7 +151,8 @@ public class RatingDseDao extends DseDaoSupport {
     public CompletableFuture< Optional < VideoRatingByUser > > findUserRating(UUID videoId, UUID userid) {
         assertNotNull("findUserRating", "videoId", videoId);
         assertNotNull("findUserRating", "userid", userid);
-        return asCompletableFuture(mapperVideoRatingByUser.getAsync(videoId, userid))
+        return FutureUtils
+                    .asCompletableFuture(mapperVideoRatingByUser.getAsync(videoId, userid))
                     .thenApplyAsync(Optional::ofNullable);
     }
   

@@ -2,15 +2,11 @@ package com.killrvideo.service.sugestedvideo.dao;
 
 import static com.killrvideo.service.sugestedvideo.grpc.SuggestedVideosServiceGrpcMapper.mapVideoAddedtoVideoDTO;
 
-import java.time.Duration;
-import java.util.Collections;
 import java.util.Date;
 import java.util.UUID;
-import java.util.stream.StreamSupport;
 
 import javax.annotation.PostConstruct;
 
-import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -65,28 +61,28 @@ public class SuggestedVideosMessagingDao {
     @PostConstruct
     public void registerConsumerVideoRating() {
         LOGGER.info("Start consuming events from topic '{}' ..", topicVideoRated);
-        consumerVideoRatingProtobuf.subscribe(Collections.singletonList(topicVideoRated));
-        StreamSupport.stream(consumerVideoRatingProtobuf.poll(Duration.ofSeconds(2L)).spliterator(), false)
-                     .map(ConsumerRecord::value)
-                     .forEach(this::onVideoRatingMessage);
+        //consumerVideoRatingProtobuf.subscribe(Collections.singletonList(topicVideoRated));
+        //StreamSupport.stream(consumerVideoRatingProtobuf.poll(Duration.ofSeconds(2L)).spliterator(), false)
+        //             .map(ConsumerRecord::value)
+        //             .forEach(this::onVideoRatingMessage);
     }
     
     @PostConstruct
     public void registerConsumerUserCreated() {
         LOGGER.info("Start consuming events from topic '{}' ..", topicUserCreated);
-        consumerUserCreatedProtobuf.subscribe(Collections.singletonList(topicUserCreated));
-        StreamSupport.stream(consumerUserCreatedProtobuf.poll(Duration.ofSeconds(2L)).spliterator(), false)
-                     .map(ConsumerRecord::value)
-                     .forEach(this::onUserCreatedMessage);
+        //consumerUserCreatedProtobuf.subscribe(Collections.singletonList(topicUserCreated));
+        //StreamSupport.stream(consumerUserCreatedProtobuf.poll(Duration.ofSeconds(2L)).spliterator(), false)
+        //             .map(ConsumerRecord::value)
+        //             .forEach(this::onUserCreatedMessage);
     }
     
     @PostConstruct
     public void registerConsumerYoutubeVideoAdded() {
         LOGGER.info("Start consuming events from topic '{}' ..", topicVideoCreated);
-        consumerVideoCreatedProtobuf.subscribe(Collections.singletonList(topicVideoCreated));
-        StreamSupport.stream(consumerVideoCreatedProtobuf.poll(Duration.ofSeconds(2L)).spliterator(), false)
-                     .map(ConsumerRecord::value)
-                     .forEach(this::onYoutubeVideoAddedMessage);
+        //consumerVideoCreatedProtobuf.subscribe(Collections.singletonList(topicVideoCreated));
+        //StreamSupport.stream(consumerVideoCreatedProtobuf.poll(Duration.ofSeconds(2L)).spliterator(), false)
+        //             .map(ConsumerRecord::value)
+        //             .forEach(this::onYoutubeVideoAddedMessage);
     }
     
     public void onVideoRatingMessage(byte[] payload) {

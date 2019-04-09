@@ -2,8 +2,6 @@ package com.killrvideo.dse.dao;
 
 import static com.datastax.driver.mapping.Mapper.Option.timestamp;
 
-import java.util.concurrent.CompletableFuture;
-
 import javax.annotation.PostConstruct;
 
 import org.slf4j.Logger;
@@ -13,9 +11,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import com.datastax.driver.dse.DseSession;
 import com.datastax.driver.mapping.Mapper;
 import com.datastax.driver.mapping.MappingManager;
-import com.google.common.util.concurrent.FutureCallback;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
 import com.killrvideo.model.CommonConstants;
 
 /**
@@ -79,34 +74,6 @@ public abstract class DseDaoSupport implements CommonConstants {
         if (obj == null) {
             throw new IllegalArgumentException("Assertion failed: param " + pName + " is required for method " + mName);
         }
-    }
-    
-    protected <T> CompletableFuture<T> asCompletableFuture(final ListenableFuture<T> listenableFuture) {
-
-        //create an instance of CompletableFuture
-        CompletableFuture<T> completable = new CompletableFuture<T>() {
-            @Override
-            public boolean cancel(boolean mayInterruptIfRunning) {
-                // propagate cancel to the listenable future
-                boolean result = listenableFuture.cancel(mayInterruptIfRunning);
-                super.cancel(mayInterruptIfRunning);
-                return result;
-            }
-        };
-
-        // add callback
-        Futures.addCallback(listenableFuture, new FutureCallback<T>() {
-            @Override
-            public void onSuccess(T result) {
-                completable.complete(result);
-            }
-
-            @Override
-            public void onFailure(Throwable t) {
-                completable.completeExceptionally(t);
-            }
-        });
-        return completable;
     }
 
 }

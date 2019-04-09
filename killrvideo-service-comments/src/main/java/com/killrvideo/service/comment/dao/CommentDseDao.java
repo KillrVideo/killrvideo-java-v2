@@ -45,6 +45,7 @@ import com.killrvideo.service.comment.dto.CommentByUser;
 import com.killrvideo.service.comment.dto.CommentByVideo;
 import com.killrvideo.service.comment.dto.QueryCommentByUser;
 import com.killrvideo.service.comment.dto.QueryCommentByVideo;
+import com.killrvideo.utils.FutureUtils;
 
 /**
  * Implementation of queries and related to {@link Comment} objects within DataStax Enterprise.
@@ -215,7 +216,8 @@ public class CommentDseDao extends DseDaoSupport {
     public CompletableFuture < ResultListPage<Comment> > findCommentsByVideosIdAsync(final QueryCommentByVideo query) {
         BoundStatement  boundStatement  = buildStatementVideoComments(query);                   // Parse input to create statement
         ResultSetFuture resultSetFuture = dseSession.executeAsync(boundStatement);              // Execute statement to get a FUTURE resultSet (Async)
-        return asCompletableFuture(resultSetFuture).thenApplyAsync(this::mapToCommentList);  // Iterate on resultSet to build result bean
+        return FutureUtils.asCompletableFuture(resultSetFuture)
+                          .thenApplyAsync(this::mapToCommentList); // Iterate on resultSet to build result bean  
     }
     
     /**
@@ -230,9 +232,8 @@ public class CommentDseDao extends DseDaoSupport {
      * Execute a query against the 'comment_by_user' table (ASYNC).
      */
     public CompletableFuture< ResultListPage<Comment> > findCommentsByUserIdAsync(final QueryCommentByUser query) {
-        // Like before but inlined as a boss.. again 
-        return asCompletableFuture(dseSession.executeAsync(buildStatementUserComments(query)))
-                                                .thenApplyAsync(this::mapToCommentList);
+        return FutureUtils.asCompletableFuture(dseSession.executeAsync(buildStatementUserComments(query)))
+                          .thenApplyAsync(this::mapToCommentList);
     }
     
     /**

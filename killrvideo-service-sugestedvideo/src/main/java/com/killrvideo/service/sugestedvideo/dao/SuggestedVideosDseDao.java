@@ -41,6 +41,7 @@ import com.killrvideo.dse.graph.KillrVideoTraversalConstants;
 import com.killrvideo.dse.graph.KillrVideoTraversalSource;
 import com.killrvideo.dse.graph.__;
 import com.killrvideo.dse.utils.DseUtils;
+import com.killrvideo.utils.FutureUtils;
 
 /**
  * Implementations of operation for Videos.
@@ -112,7 +113,7 @@ public class SuggestedVideosDseDao extends DseDaoSupport implements KillrVideoTr
     public CompletableFuture< ResultListPage<Video> > getRelatedVideos(UUID videoId, int fetchSize, Optional<String> pagingState) {
         CompletableFuture<Result<Video>> relatedVideosFuture = findVideoById(videoId).thenCompose(video -> {
             BoundStatement stmt = createStatementToSearchVideos(video, fetchSize, pagingState);
-            return asCompletableFuture(mapperVideo.mapAsync(dseSession.executeAsync(stmt)));
+            return FutureUtils.asCompletableFuture(mapperVideo.mapAsync(dseSession.executeAsync(stmt)));
         });
         // so far I got a Result<Video> async, need to fetch only expected page and save paging state
         return relatedVideosFuture.< ResultListPage<Video> > thenApply(ResultListPage::new);
@@ -141,7 +142,7 @@ public class SuggestedVideosDseDao extends DseDaoSupport implements KillrVideoTr
         
         // Execute Sync
         CompletableFuture<GraphResultSet> futureRs = 
-                asCompletableFuture(dseSession.executeGraphAsync(graphStatement));
+                FutureUtils.asCompletableFuture(dseSession.executeGraphAsync(graphStatement));
         
        // Mapping to expected List
        return futureRs.thenApply(
@@ -230,7 +231,7 @@ public class SuggestedVideosDseDao extends DseDaoSupport implements KillrVideoTr
          */
         GraphStatement gStatement = DseGraph.statementFromTraversal(traversal);
         LOGGER.info("Traversal for 'updateGraphNewVideo' : {}", DseUtils.displayGraphTranserval(traversal));
-        asCompletableFuture(dseSession.executeGraphAsync(gStatement)).whenComplete((graphResultSet, ex) -> {
+        FutureUtils.asCompletableFuture(dseSession.executeGraphAsync(gStatement)).whenComplete((graphResultSet, ex) -> {
             if (graphResultSet != null) {
                 LOGGER.debug("Added video vertex, uploaded, and taggedWith edges: " + graphResultSet.all());
             }  else {
@@ -254,7 +255,7 @@ public class SuggestedVideosDseDao extends DseDaoSupport implements KillrVideoTr
         final KillrVideoTraversal traversal = traversalSource.user(userId, email, userCreation);
         GraphStatement gStatement = DseGraph.statementFromTraversal(traversal);
         LOGGER.info("Executed transversal for 'updateGraphNewUser' : {}", DseUtils.displayGraphTranserval(traversal));
-        asCompletableFuture(dseSession.executeGraphAsync(gStatement)).whenComplete((graphResultSet, ex) -> {
+        FutureUtils.asCompletableFuture(dseSession.executeGraphAsync(gStatement)).whenComplete((graphResultSet, ex) -> {
             if (graphResultSet != null) {
                 LOGGER.debug("Added user vertex: " + graphResultSet.one());
             } else {
@@ -277,7 +278,7 @@ public class SuggestedVideosDseDao extends DseDaoSupport implements KillrVideoTr
         final KillrVideoTraversal traversal = traversalSource.videos(videoId).add(__.rated(userId, rate));
         GraphStatement gStatement = DseGraph.statementFromTraversal(traversal);
         LOGGER.info("Executed transversal for 'updateGraphNewUserRating' : {}", DseUtils.displayGraphTranserval(traversal));
-        asCompletableFuture(dseSession.executeGraphAsync(gStatement)).whenComplete((graphResultSet, ex) -> {
+        FutureUtils.asCompletableFuture(dseSession.executeGraphAsync(gStatement)).whenComplete((graphResultSet, ex) -> {
             if (graphResultSet != null) {
                 LOGGER.debug("Added rating between user and video: " + graphResultSet.one());
             } else {
@@ -301,7 +302,7 @@ public class SuggestedVideosDseDao extends DseDaoSupport implements KillrVideoTr
     
     private CompletableFuture<Video> findVideoById(UUID videoId) {
        Assert.notNull(videoId, "videoid is required to update statistics");
-       return asCompletableFuture(mapperVideo.getAsync(videoId));
+       return FutureUtils.asCompletableFuture(mapperVideo.getAsync(videoId));
     }
     
     /**

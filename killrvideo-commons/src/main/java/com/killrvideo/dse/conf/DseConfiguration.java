@@ -119,6 +119,7 @@ public class DseConfiguration {
          */
          // Required 
          clusterConfig.withoutJMXReporting();
+         clusterConfig.getConfiguration().getSocketOptions().setReadTimeoutMillis(3000);
          clusterConfig.getConfiguration().getCodecRegistry().register(new BlobToStringCodec());
          
          final AtomicInteger atomicCount = new AtomicInteger(1);

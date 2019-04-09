@@ -1,18 +1,16 @@
 package com.killrvideo.messaging.dao;
 
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.time.Duration;
-import java.util.Collections;
-import java.util.stream.StreamSupport;
+import java.util.concurrent.Future;
 
 import javax.annotation.PostConstruct;
 
-import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.clients.producer.RecordMetadata;
+import org.apache.kafka.common.utils.Bytes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -54,9 +52,13 @@ public class MessagingDaoKafka implements MessagingDao {
     
     /** {@inheritDoc} */
     @Override
-    public void sendEvent(String targetDestination, Object event) {
-       protobufProducer.send(
-               new ProducerRecord<String, byte[]>(targetDestination, serializePayload(event)));
+    public Future<RecordMetadata> sendEvent(String targetDestination, Object event) {
+        LOGGER.info("Sending Event '{}' ..", event.getClass().getName());
+        byte[] payload = serializePayload(event);
+        LOGGER.info("Sending Event '{}' ..", event.getClass().getName());
+        org.apache.kafka.common.utils.Bytes b = new Bytes(payload);
+        ProducerRecord<String, byte[]> msg = new ProducerRecord<String, byte[]>(targetDestination, payload);
+        return protobufProducer.send(msg);
     }
    
     // -- Common Error Handling --
@@ -64,10 +66,10 @@ public class MessagingDaoKafka implements MessagingDao {
     @PostConstruct
     public void registerErrorConsumer() {
         LOGGER.info("Start consuming events from topic '{}' ..", topicErrors);
-        errorLogger.subscribe(Collections.singletonList(topicErrors));
-        StreamSupport.stream(errorLogger.poll(Duration.ofSeconds(5)).spliterator(), false)
-                     .map(ConsumerRecord::value)
-                     .forEach(this::consumeErrorEvent);
+        //errorLogger.subscribe(Collections.singletonList(topicErrors));
+        //StreamSupport.stream(errorLogger.poll(Duration.ofSeconds(5)).spliterator(), false)
+        //            .map(ConsumerRecord::value)
+        //             .forEach(this::consumeErrorEvent);
     }
     
     /**

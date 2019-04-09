@@ -18,8 +18,8 @@
 	<inceptionYear>2016</inceptionYear>
 	<url>https://killrvideo.github.io/</url>
 	<description>
-    KillrVideo is a reference application for developers looking to learn how to 
-    build applications with Apache Cassandra and DataStax Enterprise.
+     KillrVideo is a reference application for developers looking to learn how to 
+     build applications with Apache Cassandra and DataStax Enterprise.
    </description>
 
 	<!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
@@ -27,28 +27,13 @@
 	<!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
 	<modules>
 		<module>killrvideo-commons</module>
-		
 		<module>killrvideo-service-comments</module>
-		<module>killrvideo-service-comments-standalone</module>
-
 		<module>killrvideo-service-ratings</module>
-		<module>killrvideo-service-ratings-standalone</module>
-		
 		<module>killrvideo-service-search</module>
-		<module>killrvideo-service-search-standalone</module>
-		
 		<module>killrvideo-service-statistics</module>
-		<module>killrvideo-service-statistics-standalone</module>
-		
 		<module>killrvideo-service-users</module>
-		<module>killrvideo-service-users-standalone</module>
-		
 		<module>killrvideo-service-videocatalog</module>
-		<module>killrvideo-service-videocatalog-standalone</module>
-		
 		<module>killrvideo-service-sugestedvideo</module>
-		<module>killrvideo-service-sugestedvideo-standalone</module>
-		
 		<module>killrvideo-services</module>
 	</modules>
 
@@ -58,10 +43,10 @@
 	<properties>
 		
 		<!-- DataStax Java-Driver -->
-		<dse.version>1.7.0</dse.version>
+		<dse.version>1.8.1</dse.version>
 		
 		<!-- Spring -->
-		<spring.version>5.1.3.RELEASE</spring.version>
+		<spring.version>5.1.4.RELEASE</spring.version>
 		<spring-boot.version>2.1.1.RELEASE</spring-boot.version>
 		
    		<!-- Validation -->

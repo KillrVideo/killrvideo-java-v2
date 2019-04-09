@@ -89,12 +89,12 @@ public class UserManagementServiceGrpc extends UserManagementServiceImplBase {
                                .asRuntimeException());
             } else {
                 traceSuccess("createUser", starts);
-                messagingDao.sendEvent(topicUserCreated, UserCreated.newBuilder()
+                /*messagingDao.sendEvent(topicUserCreated, UserCreated.newBuilder()
                         .setEmail(grpcReq.getEmail())
                         .setFirstName(grpcReq.getFirstName())
                         .setLastName(grpcReq.getLastName())
                         .setUserId(grpcReq.getUserId())
-                        .setTimestamp(Timestamp.newBuilder().build()));
+                        .setTimestamp(Timestamp.newBuilder().build()));*/
                 grpcResObserver.onNext(CreateUserResponse.newBuilder().build());
                 grpcResObserver.onCompleted();
             }

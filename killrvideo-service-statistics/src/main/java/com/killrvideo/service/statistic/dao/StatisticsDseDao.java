@@ -17,6 +17,7 @@ import com.datastax.driver.dse.DseSession;
 import com.datastax.driver.mapping.Mapper;
 import com.killrvideo.dse.dao.DseDaoSupport;
 import com.killrvideo.service.statistic.dto.VideoPlaybackStats;
+import com.killrvideo.utils.FutureUtils;
 
 /**
  * Implementations of operation for Videos.
@@ -76,7 +77,7 @@ public class StatisticsDseDao extends DseDaoSupport {
     public CompletableFuture<Void> recordPlaybackStartedAsync(UUID videoId) {
         Assert.notNull(videoId, "videoid is required to update statistics");
         BoundStatement bound = incrRecordPlayBacks.bind().setUUID(VideoPlaybackStats.COLUMN_VIDEOID, videoId);
-        return asCompletableFuture(dseSession.executeAsync(bound)).<Void>thenApply(c -> null);
+        return FutureUtils.asCompletableFuture(dseSession.executeAsync(bound)).<Void>thenApply(c -> null);
     }
     
     /**
@@ -93,7 +94,7 @@ public class StatisticsDseDao extends DseDaoSupport {
         // Create a future for each entry
         final List<CompletableFuture<VideoPlaybackStats>> futureList = listOfVideoIds.stream()
                       .map(mappervideoPlaybackStats::getAsync)
-                      .map(this::asCompletableFuture)
+                      .map(FutureUtils::asCompletableFuture)
                       .collect(Collectors.toList());
 
         // List <Future> => Future<List> ! Amazing
