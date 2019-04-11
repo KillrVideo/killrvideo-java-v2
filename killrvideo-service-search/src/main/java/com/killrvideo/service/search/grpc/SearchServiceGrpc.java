@@ -13,12 +13,11 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import com.killrvideo.dse.dto.ResultListPage;
 import com.killrvideo.dse.dto.Video;
-import com.killrvideo.messaging.dao.MessagingDao;
 import com.killrvideo.service.search.dao.SearchDseDao;
 
 import io.grpc.Status;
@@ -40,16 +39,12 @@ public class SearchServiceGrpc extends SearchServiceImplBase {
     /** Loger for that class. */
     private static Logger LOGGER = LoggerFactory.getLogger(SearchServiceGrpc.class);
     
-    /** Identifier for search service. */
-    public static final String SEARCH_SERVICE_NAME = "SearchService";
-    
+    @Value("${killrvideo.discovery.services.search : SearchService}")
+    private String serviceKey;
+   
     @Autowired
     private SearchDseDao dseSearchDao;
     
-    @Autowired
-    @Qualifier("killrvideo.dao.messaging.kafka")
-    private MessagingDao messagingDao;
-   
     /** {@inheritDoc} */
     @Override
     public void searchVideos(SearchVideosRequest grpcReq, StreamObserver<SearchVideosResponse> grpcResObserver) {
@@ -65,29 +60,30 @@ public class SearchServiceGrpc extends SearchServiceImplBase {
         int              searchPageSize = grpcReq.getPageSize();
         Optional<String> searchPagingState = Optional.ofNullable(grpcReq.getPagingState()).filter(StringUtils::isNotBlank);
         
-        // Invoke DAO Async
-        CompletableFuture<ResultListPage<Video>> futureDao = 
-                dseSearchDao.searchVideosAsync(searchQuery, searchPageSize,searchPagingState);
-        
         // Map Result back to GRPC
-        futureDao.whenComplete((resultPage, error) -> {
-          if (error == null) {
-              traceSuccess("searchVideos", starts);
-              final SearchVideosResponse.Builder builder = SearchVideosResponse.newBuilder();
-              builder.setQuery(grpcReq.getQuery());
-              resultPage.getPagingState().ifPresent(builder::setPagingState);
-              resultPage.getResults().stream()
-                        .map(SearchServiceGrpcMapper::maptoResultVideoPreview)
-                        .forEach(builder::addVideos);
-              grpcResObserver.onNext(builder.build());
-              grpcResObserver.onCompleted();
-              
-           } else {
-              traceError("searchVideos", starts, error);
-              messagingDao.sendErrorEvent(SEARCH_SERVICE_NAME, error);
-              grpcResObserver.onError(Status.INTERNAL.withCause(error).asRuntimeException());
-           }
+        dseSearchDao
+            .searchVideosAsync(searchQuery, searchPageSize,searchPagingState)
+            .whenComplete((resultPage, error) -> {
+              if (error == null) {
+                  traceSuccess("searchVideos", starts);
+                  grpcResObserver.onNext(buildSearchGrpcResponse(resultPage, grpcReq));
+                  grpcResObserver.onCompleted();
+                  
+               } else {
+                  traceError("searchVideos", starts, error);
+                  grpcResObserver.onError(Status.INTERNAL.withCause(error).asRuntimeException());
+               }
         });
+    }
+    
+    private SearchVideosResponse buildSearchGrpcResponse(ResultListPage<Video> resultPage, SearchVideosRequest initialRequest) {
+        final SearchVideosResponse.Builder builder = SearchVideosResponse.newBuilder();
+        builder.setQuery(initialRequest.getQuery());
+        resultPage.getPagingState().ifPresent(builder::setPagingState);
+        resultPage.getResults().stream()
+                  .map(SearchServiceGrpcMapper::maptoResultVideoPreview)
+                  .forEach(builder::addVideos);
+        return builder.build();
     }
 
     /** {@inheritDoc} */
@@ -120,7 +116,6 @@ public class SearchServiceGrpc extends SearchServiceImplBase {
               grpcResObserver.onCompleted();
           } else {
               traceError("getQuerySuggestions", starts, error);
-              messagingDao.sendErrorEvent(SEARCH_SERVICE_NAME, error);
               grpcResObserver.onError(Status.INTERNAL.withCause(error).asRuntimeException());
           }             
         });
@@ -150,6 +145,16 @@ public class SearchServiceGrpc extends SearchServiceImplBase {
      */
     private void traceError(String method, Instant starts, Throwable t) {
         LOGGER.error("An error occured in {} after {}", method, Duration.between(starts, Instant.now()), t);
+    }
+
+    /**
+     * Getter accessor for attribute 'serviceKey'.
+     *
+     * @return
+     *       current value of 'serviceKey'
+     */
+    public String getServiceKey() {
+        return serviceKey;
     }
 
 }

@@ -17,11 +17,9 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import com.google.protobuf.Timestamp;
 import com.killrvideo.messaging.dao.MessagingDao;
 import com.killrvideo.service.user.dao.UserDseDao;
 import com.killrvideo.service.user.dto.User;
@@ -37,32 +35,29 @@ import killrvideo.user_management.UserManagementServiceOuterClass.GetUserProfile
 import killrvideo.user_management.UserManagementServiceOuterClass.GetUserProfileResponse;
 import killrvideo.user_management.UserManagementServiceOuterClass.VerifyCredentialsRequest;
 import killrvideo.user_management.UserManagementServiceOuterClass.VerifyCredentialsResponse;
-import killrvideo.user_management.events.UserManagementEvents.UserCreated;
-
 
 /**
  * Create or update users.
  *
  * @author DataStax advocates Team
  */
-@Service
+@Service("killrvideo.service.grpc.user")
 public class UserManagementServiceGrpc extends UserManagementServiceImplBase {
     
     /** Loger for that class. */
     private static Logger LOGGER = LoggerFactory.getLogger(UserManagementServiceGrpc.class);
     
-    /** Unique name for the user service. */
-    public static final String USER_SERVICE_NAME = "UserManagementService";
-     
-    @Autowired
-    @Qualifier("killrvideo.dao.messaging.kafka")
-    private MessagingDao messagingDao;
-    
-    @Value("${killrvideo.messaging.kafka.topics.userCreated : topic-kv-userCreation}")
+    @Value("${killrvideo.messaging.destinations.userCreated : topic-kv-userCreation}")
     private String topicUserCreated;
+    
+    @Value("${killrvideo.discovery.services.user : UserManagementService}")
+    private String serviceKey;
     
     @Autowired
     private UserDseDao userDseDao;
+    
+    @Autowired
+    private MessagingDao messagingDao;
     
      /** {@inheritDoc} */
     @Override
@@ -84,7 +79,6 @@ public class UserManagementServiceGrpc extends UserManagementServiceImplBase {
         userDseDao.createUserAsync(user, hashedPassword).whenComplete((result, error) -> {
             if (error != null ) {
                 traceError("createUser", starts, error);
-                messagingDao.sendErrorEvent(USER_SERVICE_NAME, error);
                 grpcResObserver.onError(Status.INVALID_ARGUMENT.augmentDescription(error.getMessage())
                                .asRuntimeException());
             } else {
@@ -123,7 +117,6 @@ public class UserManagementServiceGrpc extends UserManagementServiceImplBase {
         futureCredential.whenComplete((credential, error) -> {
             if (error != null ) {
                 traceError("verifyCredentials", starts, error);
-                messagingDao.sendErrorEvent(USER_SERVICE_NAME, error);
                 if (!HashUtils.isPasswordValid(grpcReq.getPassword(), credential.getPassword())) {
                     grpcResObserver.onError(Status.INVALID_ARGUMENT
                                    .withDescription("Email address or password are not correct").asRuntimeException());
@@ -174,7 +167,6 @@ public class UserManagementServiceGrpc extends UserManagementServiceImplBase {
             userListFuture.whenComplete((users, error) -> {
                 if (error != null ) {
                     traceError("getUserProfile", starts, error);
-                    messagingDao.sendErrorEvent(USER_SERVICE_NAME, error);
                     grpcResObserver.onError(Status.INTERNAL.withCause(error).asRuntimeException());
                 } else {
                     traceSuccess("getUserProfile", starts);
@@ -212,5 +204,15 @@ public class UserManagementServiceGrpc extends UserManagementServiceImplBase {
      */
     private void traceError(String method, Instant starts, Throwable t) {
         LOGGER.error("An error occured in {} after {}", method, Duration.between(starts, Instant.now()), t);
+    }
+
+    /**
+     * Getter accessor for attribute 'serviceKey'.
+     *
+     * @return
+     *       current value of 'serviceKey'
+     */
+    public String getServiceKey() {
+        return serviceKey;
     }
 }

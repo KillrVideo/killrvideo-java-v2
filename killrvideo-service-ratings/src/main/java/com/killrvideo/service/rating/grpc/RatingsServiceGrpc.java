@@ -5,7 +5,6 @@ import static com.killrvideo.service.rating.grpc.RatingsServiceGrpcMapper.maptoU
 import static com.killrvideo.service.rating.grpc.RatingsServiceGrpcValidator.validateGrpcRequest_GetRating;
 import static com.killrvideo.service.rating.grpc.RatingsServiceGrpcValidator.validateGrpcRequest_GetUserRating;
 import static com.killrvideo.service.rating.grpc.RatingsServiceGrpcValidator.validateGrpcRequest_RateVideo;
-import static com.killrvideo.utils.GrpcMappingUtils.instantToTimeStamp;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -14,7 +13,6 @@ import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -30,7 +28,6 @@ import killrvideo.ratings.RatingsServiceOuterClass.GetUserRatingRequest;
 import killrvideo.ratings.RatingsServiceOuterClass.GetUserRatingResponse;
 import killrvideo.ratings.RatingsServiceOuterClass.RateVideoRequest;
 import killrvideo.ratings.RatingsServiceOuterClass.RateVideoResponse;
-import killrvideo.ratings.events.RatingsEvents.UserRatedVideo;
 
 /**
  * Operations on Ratings with GRPC.
@@ -40,16 +37,15 @@ import killrvideo.ratings.events.RatingsEvents.UserRatedVideo;
 @Service
 public class RatingsServiceGrpc extends RatingsServiceImplBase {
     
-    /** Unique name to be used : as DNS, in ETCD. */
-    public static final String RATINGS_SERVICE_NAME = "RatingsService";
-    
     /** Loger for that class. */
     private static Logger LOGGER = LoggerFactory.getLogger(RatingsServiceGrpc.class);
     
     /** Inter-service communications (messaging). */
     @Autowired
-    @Qualifier("killrvideo.dao.messaging.kafka")
     private MessagingDao messagingDao;
+    
+    @Value("${killrvideo.discovery.services.rating : RatingsService}")
+    private String serviceKey;
     
     @Value("${killrvideo.messaging.kafka.topics.videoRated : topic-kv-videoRating}")
     private String topicvideoRated;
@@ -76,17 +72,16 @@ public class RatingsServiceGrpc extends RatingsServiceImplBase {
         dseRatingDao.rateVideo(videoid, userid, rate).whenComplete((result, error) -> {
             if (error == null) {
                 traceSuccess("rateVideo", starts);
-                messagingDao.sendEvent(topicvideoRated, 
+                /*messagingDao.sendEvent(topicvideoRated, 
                         UserRatedVideo.newBuilder()
                         .setRating(grpcReq.getRating())
                         .setRatingTimestamp(instantToTimeStamp(Instant.now()))
                         .setUserId(grpcReq.getUserId())
-                        .setVideoId(grpcReq.getVideoId()).build());
+                        .setVideoId(grpcReq.getVideoId()).build());*/
                 grpcResObserver.onNext(RateVideoResponse.newBuilder().build());
                 grpcResObserver.onCompleted();
             } else {
                 traceError("rateVideo", starts, error);
-                messagingDao.sendErrorEvent(RATINGS_SERVICE_NAME, error);
                 grpcResObserver.onError(Status.INTERNAL.withCause(error).asRuntimeException());
             }
         });
@@ -121,7 +116,6 @@ public class RatingsServiceGrpc extends RatingsServiceImplBase {
                 grpcResObserver.onCompleted();
             } else {
                 traceError("getRating", starts, error);
-                messagingDao.sendErrorEvent(RATINGS_SERVICE_NAME, error);
                 grpcResObserver.onError(Status.INTERNAL.withCause(error).asRuntimeException());
             }
         });
@@ -157,7 +151,6 @@ public class RatingsServiceGrpc extends RatingsServiceImplBase {
                 grpcResObserver.onCompleted();
             } else {
                 traceError("getUserRating", starts, error);
-                messagingDao.sendErrorEvent(RATINGS_SERVICE_NAME, error);
                 grpcResObserver.onError(Status.INTERNAL.withCause(error).asRuntimeException());
             }
         });
@@ -187,6 +180,16 @@ public class RatingsServiceGrpc extends RatingsServiceImplBase {
      */
     private void traceError(String method, Instant starts, Throwable t) {
         LOGGER.error("An error occured in {} after {}", method, Duration.between(starts, Instant.now()), t);
+    }
+
+    /**
+     * Getter accessor for attribute 'serviceKey'.
+     *
+     * @return
+     *       current value of 'serviceKey'
+     */
+    public String getServiceKey() {
+        return serviceKey;
     }
     
 

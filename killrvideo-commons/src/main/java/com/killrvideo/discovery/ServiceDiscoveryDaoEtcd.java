@@ -15,11 +15,13 @@ import javax.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 import com.evanlennick.retry4j.CallExecutor;
 import com.evanlennick.retry4j.config.RetryConfig;
 import com.evanlennick.retry4j.config.RetryConfigBuilder;
+import com.killrvideo.conf.KillrVideoConfiguration;
 import com.xqbase.etcd4j.EtcdClient;
 import com.xqbase.etcd4j.EtcdClientException;
 import com.xqbase.etcd4j.EtcdNode;
@@ -29,7 +31,8 @@ import com.xqbase.etcd4j.EtcdNode;
  * 
  * @author DataStax Developer Advocates Team
  */
-@Component
+@Component("killrvideo.discovery.etcd")
+@Profile(KillrVideoConfiguration.PROFILE_DISCOVERY_ETCD)
 public class ServiceDiscoveryDaoEtcd implements ServiceDiscoveryDao {
 
     /** Initialize dedicated connection to ETCD system. */
@@ -37,25 +40,17 @@ public class ServiceDiscoveryDaoEtcd implements ServiceDiscoveryDao {
     
     /** Namespace. */
     public static String KILLRVIDEO_SERVICE_NAMESPACE = "/killrvideo/services/";
-    
-    /**
-     *  Expected 'KILLRVIDEO_DOCKER_IP' env variable
-     *  Then, if not present put 10.0.75.1 as a default value (dockerNAT assigns 10.0.75.1 on MAC)
-     */
-    @Value("#{environment.KILLRVIDEO_DOCKER_IP ?: '10.0.75.1'}")
+   
+    @Value("${killrvideo.discovery.etcd.host: 10.0.75.1}")
     private String etcdServerHost;
-    
-    /** 
-     * Retrieve expected from application.properties/application .yaml files
-     * Then, if not find use default value 2379
-     */
-    @Value("${killrvideo.etcd.port: 2379}")
+   
+    @Value("${killrvideo.discovery.etcd.port: 2379}")
     private int etcdServerPort;
     
-    @Value("${killrvideo.etcd.maxNumberOfTries: 10}")
+    @Value("${killrvideo.discovery.etcd.maxNumberOfTries: 10}")
     private int maxNumberOfTriesEtcd;
     
-    @Value("${killrvideo.etcd.delayBetweenTries: 2}")
+    @Value("${killrvideo.discovery.etcd.delayBetweenTries: 2}")
     private int delayBetweenTriesEtcd;
      
     /** Native client. */
@@ -122,7 +117,7 @@ public class ServiceDiscoveryDaoEtcd implements ServiceDiscoveryDao {
      * @return
      *      list of values
      */
-    public List < String > lookupService(String serviceName) {
+    public List < String > lookup(String serviceName) {
         List< String > endPointList = new ArrayList<>();
         String serviceDirectoryKey = KILLRVIDEO_SERVICE_NAMESPACE + serviceName + "/";
         LOGGER.info(" List endpoints for key '{}':", serviceDirectoryKey);
@@ -149,7 +144,7 @@ public class ServiceDiscoveryDaoEtcd implements ServiceDiscoveryDao {
     public synchronized Optional<Integer> lookupServicePorts(String serviceName, String hostName) {
         int targetPort = -1;
         LOGGER.info("Accessing last port for endpoint with same host");
-        for (String endpoint : lookupService(serviceName)) {
+        for (String endpoint : lookup(serviceName)) {
             String[] endpointChunks = endpoint.split(":");
             int endPointPort = Integer.valueOf(endpointChunks[1]);
             String endPointHost = endpointChunks[0];
@@ -164,8 +159,8 @@ public class ServiceDiscoveryDaoEtcd implements ServiceDiscoveryDao {
     }
     
     /** {@inheritDoc} */
-    public String registerService(String serviceName, String hostName, int portNumber) {
-        String serviceDirectoryKey = KILLRVIDEO_SERVICE_NAMESPACE + serviceName + "/";
+    public String register(String serviceName, String hostName, int portNumber) {
+        String serviceDirectoryKey = KILLRVIDEO_SERVICE_NAMESPACE + serviceName.trim() + "/";
         String endPoint = hostName + ":" + portNumber;
         try {
             try {
@@ -197,7 +192,7 @@ public class ServiceDiscoveryDaoEtcd implements ServiceDiscoveryDao {
     }
 
     /** {@inheritDoc} */
-    public void unRegisterService(String serviceName, String hostName, int portNumber) {
+    public void unregisterEndpoint(String serviceName, String hostName, int portNumber) {
         String serviceDirectoryKey = KILLRVIDEO_SERVICE_NAMESPACE + serviceName + "/";
         String endPoint = hostName + ":" + portNumber;
         try {
@@ -221,7 +216,7 @@ public class ServiceDiscoveryDaoEtcd implements ServiceDiscoveryDao {
     }
     
     /** {@inheritDoc} */
-    public void unRegisterService(String serviceName) {
+    public void unregister(String serviceName) {
         String serviceDirectoryKey = KILLRVIDEO_SERVICE_NAMESPACE + serviceName + "/";
         try {
             LOGGER.info("Delete dir  '{}'", serviceDirectoryKey);

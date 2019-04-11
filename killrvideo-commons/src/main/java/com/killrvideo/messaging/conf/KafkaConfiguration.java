@@ -14,15 +14,16 @@ import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 import org.apache.kafka.common.serialization.ByteArraySerializer;
-import org.apache.kafka.common.serialization.BytesDeserializer;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 
-import com.killrvideo.discovery.ServiceDiscoveryDaoEtcd;
+import com.killrvideo.conf.KillrVideoConfiguration;
+import com.killrvideo.discovery.ServiceDiscoveryDao;
 
 /**
  * Use Kafka to exchange messages between services. 
@@ -30,16 +31,17 @@ import com.killrvideo.discovery.ServiceDiscoveryDaoEtcd;
  * @author Cedrick LUNVEN (@clunven) *
  */
 @Configuration
+@Profile(KillrVideoConfiguration.PROFILE_MESSAGING_KAFKA)
 public class KafkaConfiguration {
     
     /** Name of service in ETCD. */
-    private static final String SERVICE_KAFKA = "kafka";
+    public static final String SERVICE_KAFKA = "kafka";
+    
+    /** Default CQL listening port. */
+    public static final int DEFAULT_PORT = 8082;
     
     /** Kafka Server to be used. */
     private String kafkaServer;
-    
-    @Value("${killrvideo.etcdLookup : true}")
-    private boolean etcdLookup = false;
     
     @Value("${kafka.ack: 1 }")
     private String producerAck;
@@ -48,7 +50,7 @@ public class KafkaConfiguration {
     private String consumerGroup;
     
     @Autowired
-    private ServiceDiscoveryDaoEtcd etcdDao;
+    private ServiceDiscoveryDao discoveryDao;
     
     /**
      * Should we init connection with ETCD or direct.
@@ -58,10 +60,7 @@ public class KafkaConfiguration {
      */
     private String getKafkaServerConnectionUrl() {
         if (null == kafkaServer) {
-            kafkaServer = SERVICE_KAFKA + ":" + 8082; 
-            if (etcdLookup) { 
-                kafkaServer = String.join(",", etcdDao.lookupService(SERVICE_KAFKA));
-            }  
+            kafkaServer = String.join(",", discoveryDao.lookup(SERVICE_KAFKA));  
         } 
         return kafkaServer;
     }

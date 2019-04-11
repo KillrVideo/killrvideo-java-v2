@@ -19,10 +19,8 @@ import java.util.stream.LongStream;
 import javax.annotation.PostConstruct;
 
 import org.apache.commons.lang3.StringUtils;
-import org.apache.kafka.clients.producer.KafkaProducer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 import org.springframework.util.Assert;
 
@@ -186,9 +184,6 @@ public class VideoCatalogDseDao extends DseDaoSupport {
                         .collect(Collectors.toList()));
     }
     
-    @Autowired
-    protected KafkaProducer<String, byte[]> protobufProducer;
-   
     /**
      * Insert a VIDEO in the DB (ASYNC).
      */
@@ -199,7 +194,7 @@ public class VideoCatalogDseDao extends DseDaoSupport {
             public void onFailure(Throwable ex) { cfv.completeExceptionally(ex); }
             
             // Insertion return Void and we can put null in the complete
-            public void onSuccess(ResultSet rs) { cfv.complete(null); } 
+            public void onSuccess(ResultSet rs) { cfv.complete(null); }
         });
         return cfv;
     }

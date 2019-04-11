@@ -8,8 +8,10 @@ import java.util.concurrent.TimeUnit;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 
 import com.google.common.eventbus.EventBus;
+import com.killrvideo.conf.KillrVideoConfiguration;
 
 /**
  * Store all configuration related to Messagging.
@@ -17,6 +19,7 @@ import com.google.common.eventbus.EventBus;
  * @author DataStax Developer Advocates team.
  */
 @Configuration
+@Profile(KillrVideoConfiguration.PROFILE_MESSAGING_MEMORY)
 public class MessagingConfiguration {
     
     /** Event Bus. */

@@ -24,18 +24,15 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import com.google.common.util.concurrent.ListenableFuture;
 import com.google.protobuf.Timestamp;
 import com.killrvideo.dse.dto.CustomPagingState;
 import com.killrvideo.dse.dto.Video;
 import com.killrvideo.messaging.dao.MessagingDao;
 import com.killrvideo.service.video.dao.VideoCatalogDseDao;
 import com.killrvideo.service.video.dto.LatestVideosPage;
-import com.killrvideo.utils.FutureUtils;
 import com.killrvideo.utils.GrpcMappingUtils;
 
 import io.grpc.Status;
@@ -65,22 +62,20 @@ public class VideoCatalogServiceGrpc extends VideoCatalogServiceImplBase {
     /** Logger for this class. */
     private static Logger LOGGER = LoggerFactory.getLogger(VideoCatalogServiceGrpc.class);
     
-    /** Video catalog service name. */
-    public static final String VIDEOCATALOG_SERVICE_NAME = "VideoCatalogService";
-    
     /** Send new videos. */
-    @Value("${killrvideo.messaging.kafka.topics.youTubeVideoAdded : topic-kv-videoCreation}")
+    @Value("${killrvideo.messaging.destinations.youTubeVideoAdded : topic-kv-videoCreation}")
     private String topicVideoCreated;
+
+    @Value("${killrvideo.discovery.services.videoCatalog : VideoCatalogService}")
+    private String serviceKey;
     
     @Autowired
-    @Qualifier("killrvideo.dao.messaging.kafka")
     private MessagingDao messagingDao;
     
     @Autowired
     private VideoCatalogDseDao videoCatalogDao;
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override
     public void submitYouTubeVideo(SubmitYouTubeVideoRequest grpcReq, StreamObserver<SubmitYouTubeVideoResponse> grpcResObserver) {
         
@@ -98,11 +93,10 @@ public class VideoCatalogServiceGrpc extends VideoCatalogServiceImplBase {
         
         // Execute query (ASYNC)
         CompletableFuture<Void> futureDse = videoCatalogDao.insertVideoAsync(video);
-       
-        // Then, if OK send Message to Kafka
+        
+        // If OK, then send Message to Kafka
         CompletableFuture<Object> futureAndKafka = futureDse.thenCompose(rs -> {
-            return FutureUtils.asCompletableFuture((ListenableFuture<Object>) 
-                    messagingDao.sendEvent(topicVideoCreated, YouTubeVideoAdded.newBuilder()
+            return messagingDao.sendEvent(topicVideoCreated, YouTubeVideoAdded.newBuilder()
                             .setAddedDate(Timestamp.newBuilder().build())
                             .setDescription(video.getDescription())
                             .setLocation(video.getLocation())
@@ -110,14 +104,13 @@ public class VideoCatalogServiceGrpc extends VideoCatalogServiceImplBase {
                             .setPreviewImageLocation(video.getPreviewImageLocation())
                             .setUserId(GrpcMappingUtils.uuidToUuid(video.getUserid()))
                             .setVideoId(GrpcMappingUtils.uuidToUuid(video.getVideoid()))
-                            .build()));
-        });     
+                            .build());
+        });
         
         // Building Response
         futureAndKafka.whenComplete((result, error) -> { 
             if (error != null ) {
                 traceError("submitYouTubeVideo", starts, error);
-                messagingDao.sendErrorEvent(VIDEOCATALOG_SERVICE_NAME, error);
                 grpcResObserver.onError(Status.INTERNAL.withCause(error).asRuntimeException());
             } else {
                 traceSuccess("submitYouTubeVideo", starts);
@@ -188,7 +181,6 @@ public class VideoCatalogServiceGrpc extends VideoCatalogServiceImplBase {
             grpcResObserver.onCompleted();
         } catch(Exception error) {
             traceError("getLatestVideoPreviews", starts, error);
-            messagingDao.sendErrorEvent(VIDEOCATALOG_SERVICE_NAME, error);
             grpcResObserver.onError(Status.INTERNAL.withCause(error).asRuntimeException());
         }  
         LOGGER.debug("End getting latest video preview");
@@ -214,7 +206,7 @@ public class VideoCatalogServiceGrpc extends VideoCatalogServiceImplBase {
         futureVideo.whenComplete((video, error) -> {
             if (error != null ) {
                 traceError("getVideo", starts, error);
-                messagingDao.sendErrorEvent(VIDEOCATALOG_SERVICE_NAME, error);
+                grpcResObserver.onError(Status.INTERNAL.withCause(error).asRuntimeException());
             } else {
                 if (video != null) {
                     // Check to see if any tags exist, if not, ensure to send an empty set instead of null
@@ -261,9 +253,7 @@ public class VideoCatalogServiceGrpc extends VideoCatalogServiceImplBase {
             futureVideoList.whenComplete((videos, error) -> {
                 if (error != null ) {
                     traceError("getVideoPreviews", starts, error);
-                    messagingDao.sendErrorEvent(VIDEOCATALOG_SERVICE_NAME, error);
                     grpcResObserver.onError(Status.INTERNAL.withCause(error).asRuntimeException());
-                    
                 } else {
                     traceSuccess("getVideoPreviews", starts);
                     videos.stream()
@@ -310,7 +300,6 @@ public class VideoCatalogServiceGrpc extends VideoCatalogServiceImplBase {
             
             if (error != null ) {
                 traceError("getUserVideoPreviews", starts, error);
-                messagingDao.sendErrorEvent(VIDEOCATALOG_SERVICE_NAME, error);
                 grpcResObserver.onError(Status.INTERNAL.withCause(error).asRuntimeException());
                 
             } else {
@@ -352,5 +341,15 @@ public class VideoCatalogServiceGrpc extends VideoCatalogServiceImplBase {
      */
     private void traceError(String method, Instant starts, Throwable t) {
         LOGGER.error("An error occured in {} after {}", method, Duration.between(starts, Instant.now()), t);
+    }
+
+    /**
+     * Getter accessor for attribute 'serviceKey'.
+     *
+     * @return
+     *       current value of 'serviceKey'
+     */
+    public String getServiceKey() {
+        return serviceKey;
     }
 }

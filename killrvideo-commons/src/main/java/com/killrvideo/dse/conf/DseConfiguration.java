@@ -25,8 +25,11 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import com.datastax.driver.core.AuthProvider;
+import com.datastax.driver.core.ConsistencyLevel;
+import com.datastax.driver.core.QueryOptions;
 import com.datastax.driver.core.RemoteEndpointAwareNettySSLOptions;
 import com.datastax.driver.core.policies.AddressTranslator;
+import com.datastax.driver.core.policies.ConstantReconnectionPolicy;
 import com.datastax.driver.dse.DseCluster.Builder;
 import com.datastax.driver.dse.DseSession;
 import com.datastax.driver.dse.auth.DsePlainTextAuthProvider;
@@ -41,7 +44,7 @@ import com.datastax.dse.graph.api.DseGraph;
 import com.evanlennick.retry4j.CallExecutor;
 import com.evanlennick.retry4j.config.RetryConfig;
 import com.evanlennick.retry4j.config.RetryConfigBuilder;
-import com.killrvideo.discovery.ServiceDiscoveryDaoEtcd;
+import com.killrvideo.discovery.ServiceDiscoveryDao;
 import com.killrvideo.dse.graph.KillrVideoTraversalSource;
 import com.killrvideo.dse.utils.BlobToStringCodec;
 import com.killrvideo.model.CommonConstants;
@@ -59,12 +62,9 @@ public class DseConfiguration {
 
 	/** Internal logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger(DseConfiguration.class);
-    
-    /** Dse services Name. */
-    public static final String SERVICE_NAME_DSE = "dse";
-    
-    /** Default CQL listening port. */
-    public static final int DEFAULT_PORT = 9042;
+     
+    @Value("${killrvideo.discovery.service.cassandra: cassandra}")
+    private String cassandraServiceName;
     
     @Value("${killrvideo.cassandra.clustername: 'killrvideo'}")
     public String dseClustOerName;
@@ -97,7 +97,7 @@ public class DseConfiguration {
     private boolean etcdLookup = false;
     
     @Autowired
-    private ServiceDiscoveryDaoEtcd etcdDao;
+    private ServiceDiscoveryDao discoveryDao;
     
     @Bean
     public DseSession initializeDSE() {
@@ -109,17 +109,17 @@ public class DseConfiguration {
          populateGraphOptions(clusterConfig);
          populateSSL(clusterConfig);
          
-         /* More options available with flags through QueryOptions 
+         // More options available with flags through QueryOptions 
          QueryOptions options = new QueryOptions();
          options.setConsistencyLevel(ConsistencyLevel.QUORUM);
          options.setSerialConsistencyLevel(ConsistencyLevel.LOCAL_SERIAL);
          clusterConfig.withQueryOptions(options);
-         clusterConfig.withoutMetrics();
          clusterConfig.withReconnectionPolicy(new ConstantReconnectionPolicy(2000));
-         */
-         // Required 
+         
+         // Required
          clusterConfig.withoutJMXReporting();
-         clusterConfig.getConfiguration().getSocketOptions().setReadTimeoutMillis(3000);
+         clusterConfig.withoutMetrics();
+         clusterConfig.getConfiguration().getSocketOptions().setReadTimeoutMillis(1000);
          clusterConfig.getConfiguration().getCodecRegistry().register(new BlobToStringCodec());
          
          final AtomicInteger atomicCount = new AtomicInteger(1);
@@ -229,19 +229,12 @@ public class DseConfiguration {
      *      current configuration
      */
      private void populateContactPoints(Builder clusterConfig)  {
-        if (etcdLookup) {
-           LOGGER.info(" + Reading node addresses from ETCD.");
-           etcdDao.lookupService("cassandra")
-                  .stream()
-                  .map(this::asSocketInetAdress)
-                  .filter(node -> node.isPresent())
-                  .map(node -> node.get())
-                  .map(adress -> adress.getHostName())
-                  .forEach(clusterConfig::addContactPoint);
-        } else {
-            LOGGER.info(" + Connection to DSE with Service Alias (Kubernetes)");
-            clusterConfig.addContactPoint(SERVICE_NAME_DSE + ":" + DEFAULT_PORT);
-        }
+        discoveryDao.lookup(cassandraServiceName).stream()
+                    .map(this::asSocketInetAdress)
+                    .filter(node -> node.isPresent())
+                    .map(node -> node.get())
+                    .map(adress -> adress.getHostName())
+                    .forEach(clusterConfig::addContactPoint);
     }
     
     /**

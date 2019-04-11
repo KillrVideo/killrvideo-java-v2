@@ -14,10 +14,9 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import com.killrvideo.messaging.dao.MessagingDao;
 import com.killrvideo.service.statistic.dao.StatisticsDseDao;
 import com.killrvideo.service.statistic.dto.VideoPlaybackStats;
 
@@ -44,9 +43,8 @@ public class StatisticsServiceGrpc extends StatisticsServiceImplBase {
     /** Stast services. */
     public static final String STATISTICS_SERVICE_NAME = "StatisticsService";
   
-    @Autowired
-    @Qualifier("killrvideo.dao.messaging.kafka")
-    private MessagingDao messagingDao;
+    @Value("${killrvideo.discovery.services.statistic : StatisticsService}")
+    private String serviceKey;
     
     @Autowired
     private StatisticsDseDao statisticsDseDao;
@@ -71,7 +69,6 @@ public class StatisticsServiceGrpc extends StatisticsServiceImplBase {
         futureDao.whenComplete((result, error) -> {
             if (error != null ) {
                 traceError("recordPlaybackStarted", starts, error);
-                messagingDao.sendErrorEvent(STATISTICS_SERVICE_NAME, error);
                 grpcResObserver.onError(Status.INTERNAL.withCause(error).asRuntimeException());
             } else {
                 grpcResObserver.onNext(RecordPlaybackStartedResponse.newBuilder().build());
@@ -106,7 +103,6 @@ public class StatisticsServiceGrpc extends StatisticsServiceImplBase {
             if (error != null ) {
                  
                 traceError("getNumberOfPlays", starts, error);
-                messagingDao.sendErrorEvent(STATISTICS_SERVICE_NAME, error);
                 grpcResObserver.onError(Status.INTERNAL.withCause(error).asRuntimeException());
             } else {
                 
@@ -141,6 +137,16 @@ public class StatisticsServiceGrpc extends StatisticsServiceImplBase {
      */
     private void traceError(String method, Instant starts, Throwable t) {
         LOGGER.error("An error occured in {} after {}", method, Duration.between(starts, Instant.now()), t);
+    }
+
+    /**
+     * Getter accessor for attribute 'serviceKey'.
+     *
+     * @return
+     *       current value of 'serviceKey'
+     */
+    public String getServiceKey() {
+        return serviceKey;
     }
 
     

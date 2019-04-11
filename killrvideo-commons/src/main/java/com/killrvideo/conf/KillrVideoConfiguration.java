@@ -21,6 +21,12 @@ public class KillrVideoConfiguration {
     @Value("${application.name: KillrVideo}")
     private String applicationName;
     
+    /** Use Spring profile to adapt behaviours. */
+    public static final String PROFILE_MESSAGING_KAFKA   = "messaging_kafka";
+    public static final String PROFILE_MESSAGING_MEMORY  = "messaging_memory";
+    public static final String PROFILE_DISCOVERY_ETCD    = "discovery_etcd";
+    public static final String PROFILE_DISCOVERY_STATIC  = "discovery_static";
+    
     @Bean
     public Validator getBeanValidator() {
         return Validation.buildDefaultValidatorFactory().getValidator();

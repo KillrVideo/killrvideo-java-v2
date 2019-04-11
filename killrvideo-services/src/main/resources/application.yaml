@@ -1,67 +1,106 @@
+# ------------------------------------
 # Spring boot global configuration
+# ------------------------------------
 spring:
+  
   output:
     ansi:
       enabled: ALWAYS
+  
+  profiles:
+   active:
+    #- discovery_etcd
+    - discovery_static
+    - messaging_memory
+    #- messaging_kafka
+    
+  
 
-# Custom 'killrvideo' keys App
+############################################################################################
+# Configuration of KillrVideo Backend Services
+############################################################################################
 killrvideo:
 
   application: 
     name: killrvideo
-    instance: 
-      id: 0
-      
-  service:
-    comment:        true
-    rating:         true
-    search:         true
-    statistic:      true
-    videoCatalog:   true
-    user:           true
+  
+  #
+  # Flags enabling/disabling services
+  # To start standalone service reuse the very same deliverable
+  # Simple disable everything except the one your are interested in.
+  #
+  services:
+    comment: true
+    rating: true
+    search: true
+    statistic: true
+    videoCatalog: true
+    user: true
     suggestedVideo: true
-    
+  
+  grpc-server: 
+    port: 8899
+      
   cassandra:
     clustername: killrvideo
     mutation-error-log: /tmp/killrvideo-mutation-errors.log
     maxNumberOfTries: 10
     delayBetweenTries: 2
-
-  search:
-    ignoredWords: and,or,but,nor,so,for,yet,after,as,till,to,the,at,in,not,now,of,if,this,an,are,all,about,along,by,is,it,on,why,be,can,com,get,out,see,some,new,these,that,thing,things,wish,known,say,they,had,here,like,live,let,do,with,what,when,www,watch,will,http,https,us,you,your,more,his,her,they,them,their,me,we,near,bit,ly,back,meet,know,key,video,various,find,only,from,kind,channel,comments,below,check,right,full,while,gets,up,each,no,buy,a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z
-
-  graph:
-    timeout: 3000
-    recommendation.name: killrvideo_video_recommendations
-    
   ssl:
     enable: false
     CACertFileLocation: cassandra.cert
-    
-  grpc-server: 
-    port: 8899
-     
-  etcd:
-    host: 10.0.75.1
-    port: 2379
-    maxNumberOfTries: 30
+  search:
+    ignoredWords: and,or,but,nor,so,for,yet,after,as,till,to,the,at,in,not,now,of,if,this,an,are,all,about,along,by,is,it,on,why,be,can,com,get,out,see,some,new,these,that,thing,things,wish,known,say,they,had,here,like,live,let,do,with,what,when,www,watch,will,http,https,us,you,your,more,his,her,they,them,their,me,we,near,bit,ly,back,meet,know,key,video,various,find,only,from,kind,channel,comments,below,check,right,full,while,gets,up,each,no,buy,a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z
+  graph:
+    timeout: 3000
+    recommendation.name: killrvideo_video_recommendations
+  
+  ############################################################################################
+  # Communication between modules (Cassandra, Kafka, ui-backend) look for
+  # addresses registered in ETCD or use static service names (Docker,Kubernetes)
+  ############################################################################################
+  discovery:
+    # Service keys in ETCD
+    services:
+      comment:CommentsService
+      rating:RatingsService
+      search:SearchService
+      statistic:StatisticsService
+      suggestedVideo:SuggestedVideoService
+      user:UserManagementService
+      videoCatalog:VideoCatalogService
+      cassandra:cassandra
+      kafka:kafka
+    # Lookup in ETCD to get Kafka and DSE adresses
+    etcd:
+      host: 10.0.75.1
+      port: 2379
+      maxNumberOfTries: 30
+    # No lookups, direct values (leveraging on Docker,Kubernetes serviceNames) 
+    static:
+      kafka: 
+        host: 10.0.75.1
+        port: 8082
+      cassandra:
+        host: 10.0.75.1
+        port: 9042
 
-  ##
-  # Messaging
-  # - Will be Kafka if microservices
-  ##
+  ############################################################################################
+  # Communication between services are be implemented
+  # both with Guava or Kafka. Pick the one you want using
+  # profiles 'messaging_kafka' or 'messaging_memory'
+  ############################################################################################
   messaging:
-    transport: kafka 
+    destinations:
+      errors: topic-kv-errors
+      videoRated: topic-kv-videoRating
+      commentCreated: topic-kv-commentCreation
+      userCreated: topic-kv-userCreation
+      youTubeVideoAdded: topic-kv-videoCreation
     kafka:
       ack: 1
       consumerGroup: killrvideo
-      topics:
-        errors: topic-kv-errors
-        videoRated: topic-kv-videoRating
-        commentCreated: topic-kv-commentCreation
-        userCreated: topic-kv-userCreation
-        youTubeVideoAdded: topic-kv-videoCreation
-    inmemory:
+    memory:
       minThreads: 5
       maxThreads: 10
       ttlThreads: 60

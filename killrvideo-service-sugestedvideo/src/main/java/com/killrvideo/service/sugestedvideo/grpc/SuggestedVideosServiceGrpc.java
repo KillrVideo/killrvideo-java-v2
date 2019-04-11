@@ -15,12 +15,11 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import com.killrvideo.dse.dto.ResultListPage;
 import com.killrvideo.dse.dto.Video;
-import com.killrvideo.messaging.dao.MessagingDao;
 import com.killrvideo.service.sugestedvideo.dao.SuggestedVideosDseDao;
 
 import io.grpc.Status;
@@ -42,13 +41,9 @@ public class SuggestedVideosServiceGrpc extends SuggestedVideoServiceImplBase {
     
     /** Loger for that class. */
     private static Logger LOGGER = LoggerFactory.getLogger(SuggestedVideosServiceGrpc.class);
-    
-    /** Identifier for the service. */
-    public static final String SUGESTEDVIDEOS_SERVICE_NAME = "SuggestedVideoService";
-    
-    @Autowired
-    @Qualifier("killrvideo.dao.messaging.kafka")
-    private MessagingDao messagingDao;
+     
+    @Value("${killrvideo.discovery.services.suggestedVideo : SuggestedVideoService}")
+    private String serviceKey;
     
     @Autowired
     private SuggestedVideosDseDao suggestedVideosDseDao;
@@ -77,7 +72,6 @@ public class SuggestedVideosServiceGrpc extends SuggestedVideoServiceImplBase {
             
             if (error != null ) {
                 traceError("getRelatedVideos", starts, error);
-                messagingDao.sendErrorEvent(SUGESTEDVIDEOS_SERVICE_NAME, error);
                 grpcResObserver.onError(Status.INTERNAL.withCause(error).asRuntimeException());
                 
             } else {
@@ -118,7 +112,6 @@ public class SuggestedVideosServiceGrpc extends SuggestedVideoServiceImplBase {
             
             if (error != null ) {
                 traceError("getSuggestedForUser", starts, error);
-                messagingDao.sendErrorEvent(SUGESTEDVIDEOS_SERVICE_NAME, error);
                 grpcResObserver.onError(Status.INTERNAL.withCause(error).asRuntimeException());
                 
             } else {
@@ -156,5 +149,15 @@ public class SuggestedVideosServiceGrpc extends SuggestedVideoServiceImplBase {
      */
     private void traceError(String method, Instant starts, Throwable t) {
         LOGGER.error("An error occured in {} after {}", method, Duration.between(starts, Instant.now()), t);
+    }
+
+    /**
+     * Getter accessor for attribute 'serviceKey'.
+     *
+     * @return
+     *       current value of 'serviceKey'
+     */
+    public String getServiceKey() {
+        return serviceKey;
     }
 }

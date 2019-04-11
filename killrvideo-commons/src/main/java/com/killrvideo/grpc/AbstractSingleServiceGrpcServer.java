@@ -71,19 +71,15 @@ public abstract class AbstractSingleServiceGrpcServer {
         });
         grpcServer.start();
         LOGGER.info("[OK] Grpc Server started on port: '{}'", grpcServerPort);
-        serviceDiscoveryDao.registerService(
-                getServiceName(),  
-                killrVideoConfig.getApplicationHost(), 
-                grpcServerPort);
+        serviceDiscoveryDao.register(getServiceName(), 
+                killrVideoConfig.getApplicationHost(), grpcServerPort);
     }
     
     @PreDestroy
     public void stopGrpcServer() {
         LOGGER.info("Calling shutdown for GrpcServer");
-        serviceDiscoveryDao.unRegisterService(
-                getServiceName(), 
-                killrVideoConfig.getApplicationHost(), 
-                grpcServerPort);
+        serviceDiscoveryDao.register(getServiceName(), 
+                killrVideoConfig.getApplicationHost(), grpcServerPort);
         grpcServer.shutdown();
     }
     

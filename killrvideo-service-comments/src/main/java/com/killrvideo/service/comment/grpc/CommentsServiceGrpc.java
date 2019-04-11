@@ -11,11 +11,11 @@ import static java.util.UUID.fromString;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.concurrent.CompletableFuture;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -24,6 +24,7 @@ import com.killrvideo.service.comment.dao.CommentDseDao;
 import com.killrvideo.service.comment.dto.Comment;
 import com.killrvideo.service.comment.dto.QueryCommentByUser;
 import com.killrvideo.service.comment.dto.QueryCommentByVideo;
+import com.killrvideo.utils.GrpcMappingUtils;
 
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
@@ -34,6 +35,7 @@ import killrvideo.comments.CommentsServiceOuterClass.GetUserCommentsRequest;
 import killrvideo.comments.CommentsServiceOuterClass.GetUserCommentsResponse;
 import killrvideo.comments.CommentsServiceOuterClass.GetVideoCommentsRequest;
 import killrvideo.comments.CommentsServiceOuterClass.GetVideoCommentsResponse;
+import killrvideo.comments.events.CommentsEvents.UserCommentedOnVideo;
 
 /**
  * Exposition of comment services with GPRC Technology & Protobuf Interface
@@ -45,22 +47,20 @@ public class CommentsServiceGrpc extends CommentsServiceImplBase {
      
     /** Loger for that class. */
     private static Logger LOGGER = LoggerFactory.getLogger(CommentsServiceGrpc.class);
-     
-    /** Unique name to be used : as DNS, in ETCD. */
-    public static final String COMMENTS_SERVICE_NAME = "CommentsService";
-  
+    
     /** Communications and queries to DSE (Comment). */
     @Autowired
     private CommentDseDao dseCommentDao;
     
-    /** Inter-service communications (messaging). */
     @Autowired
-    @Qualifier("killrvideo.dao.messaging.kafka")
     private MessagingDao messagingDao;
     
-    @Value("${killrvideo.messaging.kafka.topics.commentCreation : topic-kv-commentCreation}")
-    private String topicCommentCreation;
+    @Value("${killrvideo.discovery.services.comment : CommentsService}")
+    private String serviceKey;
   
+    @Value("${killrvideo.messaging.destinations.commentCreated : topic-kv-commentCreation}")
+    private String messageDestination;
+    
     /** {@inheritDoc} */
     @Override
     public void commentOnVideo(final CommentOnVideoRequest grpcReq, StreamObserver<CommentOnVideoResponse> grpcResObserver) {
@@ -81,21 +81,24 @@ public class CommentsServiceGrpc extends CommentsServiceImplBase {
             LOGGER.debug("Insert comment on video {} for user {} : {}",  q.getVideoid(), q.getUserid(), q);
         }
         
-        // ASYNCHRONOUS works with ComputableFuture
-        dseCommentDao.insertCommentAsync(q).whenComplete((result, error) -> {
+        CompletableFuture<Void> futureDse = dseCommentDao.insertCommentAsync(q);
+        
+        // If OK, then send Message to Kafka
+        CompletableFuture<Object> futureDseThensKafka = futureDse.thenCompose(rs -> {
+            return messagingDao.sendEvent(messageDestination, UserCommentedOnVideo.newBuilder()
+                    .setCommentId(grpcReq.getCommentId())
+                    .setVideoId(grpcReq.getVideoId())
+                    .setUserId(grpcReq.getUserId())
+                    .setCommentTimestamp(GrpcMappingUtils.instantToTimeStamp(Instant.now()))
+                    .build());
+        });
+        
+        futureDseThensKafka.whenComplete((result, error) -> {
             if (error != null ) {
                 traceError("commentOnVideo", starts, error);
-                messagingDao.sendErrorEvent(COMMENTS_SERVICE_NAME, error);
                 grpcResObserver.onError(Status.INTERNAL.withCause(error).asRuntimeException());
             } else {
                 traceSuccess("commentOnVideo", starts);
-                /*messagingDao.sendEvent(topicCommentCreation, 
-                        UserCommentedOnVideo.newBuilder()
-                            .setCommentId(grpcReq.getCommentId())
-                            .setVideoId(grpcReq.getVideoId())
-                            .setUserId(grpcReq.getUserId())
-                            .setCommentTimestamp(instantToTimeStamp(Instant.now()))
-                            .build());*/
                 grpcResObserver.onNext(CommentOnVideoResponse.newBuilder().build());
                 grpcResObserver.onCompleted();
             }
@@ -123,7 +126,7 @@ public class CommentsServiceGrpc extends CommentsServiceImplBase {
                 responseObserver.onCompleted();
             } else if (error != null){
                 traceError("getVideoComments", starts, error);
-                messagingDao.sendErrorEvent(COMMENTS_SERVICE_NAME, error);
+                messagingDao.sendErrorEvent(getServiceKey(), error);
                 responseObserver.onError(error);
             }
         });
@@ -153,7 +156,7 @@ public class CommentsServiceGrpc extends CommentsServiceImplBase {
                 responseObserver.onCompleted();
             } else if (error != null){
                 traceError("getUserComments", starts, error);
-                messagingDao.sendErrorEvent(COMMENTS_SERVICE_NAME, error);
+                messagingDao.sendErrorEvent(getServiceKey(), error);
                 responseObserver.onError(error);
             }
         });
@@ -184,6 +187,15 @@ public class CommentsServiceGrpc extends CommentsServiceImplBase {
     private void traceError(String method, Instant starts, Throwable t) {
         LOGGER.error("An error occured in {} after {}", method, Duration.between(starts, Instant.now()), t);
     }
-    
+
+    /**
+     * Getter accessor for attribute 'serviceKey'.
+     *
+     * @return
+     *       current value of 'serviceKey'
+     */
+    public String getServiceKey() {
+        return serviceKey;
+    }
 
 }

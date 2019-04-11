@@ -8,7 +8,7 @@ import java.util.List;
  * @author Cedrick LUNVEN (@clunven)
  */
 public interface ServiceDiscoveryDao {
-    
+   
     /**
      * Register new endpoint for a service.
      * @param serviceName
@@ -20,7 +20,7 @@ public interface ServiceDiscoveryDao {
      * @return
      *      service key (service name + namespace)
      */
-    String registerService(String serviceName, String hostName, int portNumber);
+    String register(String serviceName, String hostName, int portNumber);
     
     /**
      * List endpoints available for a service.
@@ -30,7 +30,7 @@ public interface ServiceDiscoveryDao {
      * @return
      *      list of endpoints like hostname1:port1, hostname2:port2
      */
-    List < String > lookupService(String serviceName);
+    List < String > lookup(String serviceName);
     
     /**
      * Unregister all endpoints for a service.
@@ -38,7 +38,7 @@ public interface ServiceDiscoveryDao {
      * @param serviceName
      *      service unique identifier
      */
-    void unRegisterService(String serviceName);
+    void unregister(String serviceName);
     
     /**
      * Unregister one endpoint for a service.
@@ -50,6 +50,6 @@ public interface ServiceDiscoveryDao {
      * @param portNumber
      *      current port number
      */
-    void unRegisterService(String serviceName, String hostName, int portNumber);
+    void unregisterEndpoint(String serviceName, String hostName, int portNumber);
     
 }
