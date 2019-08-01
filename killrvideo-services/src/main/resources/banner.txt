@@ -1,0 +1,8 @@
+${AnsiColor.RED}  ____  __.__.__  .__       ____   ____.__    .___            
+${AnsiColor.RED} |    |/ _|  |  | |  |______\   \ /   /|  | __| _/____  ____  
+${AnsiColor.RED} |      < |  |  | |  |\_  __ \   Y   / |  |/ __ |/ __ \/  _ \ 
+${AnsiColor.RED} |    |  \|  |  |_|  |_|  | \/\     /  |  / /_/ \  ___(  <_> )
+${AnsiColor.RED} |____|__ \__|____/____/__|    \___/   |__\____ |\___  >____/  
+${AnsiColor.RED}         \/                                    \/    \/       
+${AnsiColor.BLUE} Brought to you by DataStax Developer Advocates team
+ For more information please visit https://killrvideo.github.io${AnsiColor.DEFAULT}

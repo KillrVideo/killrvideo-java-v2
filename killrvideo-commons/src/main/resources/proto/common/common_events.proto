@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package killrvideo.common;
+import "google/protobuf/timestamp.proto";
+import "common/common_types.proto";
+
+option csharp_namespace = "KillrVideo.Protobuf";
+
+message ErrorEvent {
+  string error_code = 1;
+  string error_message = 2;
+  string error_classname = 3;
+  string error_stack = 4;
+  google.protobuf.Timestamp error_timestamp = 5;
+}
+

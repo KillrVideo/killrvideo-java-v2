@@ -1,46 +1,78 @@
 version: '3'
-
 # Other services are specified in .\lib\killrvideo-docker-common\docker-compose.yaml
 services:
-  # Start the KillrVideo web UI on port 3000
-  web:
-    image: killrvideo/killrvideo-web:1.2.8
+
+  # Ensure consistency in Kafka World
+  zookeeper:
+    image: wurstmeister/zookeeper:3.4.6
     ports:
-    - "3000:3000"
-    depends_on:
-    - dse
-    - etcd
-    environment:
-      SERVICE_3000_NAME: web
-      KILLRVIDEO_ETCD: "etcd:2379"
-      KILLRVIDEO_DSE_USERNAME: $KILLRVIDEO_DSE_USERNAME
-      KILLRVIDEO_DSE_PASSWORD: $KILLRVIDEO_DSE_PASSWORD
-      KILLRVIDEO_CASSANDRA_REPLICATION: $KILLRVIDEO_CASSANDRA_REPLICATION
-      KILLRVIDEO_LOGGING_LEVEL: $KILLRVIDEO_LOGGING_LEVEL
+      - 2181:2181
+
+  # Start the Kafka Engine for Killrvideo
+  #kafka:
+  #  image: wurstmeister/kafka:1.0.0
+  #  depends_on:
+  #  - zookeeper
+  #  environment:
+  #    KAFKA_ADVERTISED_HOST_NAME: 10.0.75.1
+  #    KAFKA_ADVERTISED_PORT: 9092
+  #    KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+  #    KAFKA_CREATE_TOPICS: "topic-kv-videoCreation:1:1,topic-kv-userCreation:1:1,topic-kv-videoRating:1:1"
+  #  ports:
+  #  - 9092:9092
+
+  #kafkahq:
+  #  image: tchiotludo/kafkahq
+  #  environment:
+  #    KAFKAHQ_CONFIGURATION: |
+  #      kafkahq:
+  #        connections:
+  #          docker-kafka-server:
+  #            properties:
+  #              bootstrap.servers: "10.0.75.1:9092"
+  #  ports:
+  #    - "8080:8080"
+  #  depends_on:
+  #    - kafka
+
+  # Start the KillrVideo web UI on port 3000
+  #web:
+  #  image: killrvideo/killrvideo-web:1.2.8
+  #  ports:
+  #  - "3000:3000"
+  #  depends_on:
+  #  - dse
+  #  - etcd
+  #  environment:
+  #    SERVICE_3000_NAME: web
+  #    KILLRVIDEO_ETCD: "etcd:2379"
+  #    KILLRVIDEO_DSE_USERNAME: $KILLRVIDEO_DSE_USERNAME
+  #    KILLRVIDEO_DSE_PASSWORD: $KILLRVIDEO_DSE_PASSWORD
+  #    KILLRVIDEO_CASSANDRA_REPLICATION: $KILLRVIDEO_CASSANDRA_REPLICATION
+  #    KILLRVIDEO_LOGGING_LEVEL: $KILLRVIDEO_LOGGING_LEVEL
 
   # The sample data generator
-  generator:
-    image: killrvideo/killrvideo-generator:1.2.5
-    depends_on:
-    - dse
-    - etcd
-    environment:
-      KILLRVIDEO_ETCD: "etcd:2379"
-      KILLRVIDEO_DSE_USERNAME: $KILLRVIDEO_DSE_USERNAME
-      KILLRVIDEO_DSE_PASSWORD: $KILLRVIDEO_DSE_PASSWORD
-      NODE_ENV: $NODE_ENV
-      KILLRVIDEO_CASSANDRA_REPLICATION: $KILLRVIDEO_CASSANDRA_REPLICATION
-      KILLRVIDEO_LOGGING_LEVEL: $KILLRVIDEO_LOGGING_LEVEL
+  #generator:
+  #  image: killrvideo/killrvideo-generator:1.2.5
+  #  depends_on:
+  #  - dse
+  #  - etcd
+  #  environment:
+  #    KILLRVIDEO_ETCD: "etcd:2379"
+  #    KILLRVIDEO_DSE_USERNAME: $KILLRVIDEO_DSE_USERNAME
+  #    KILLRVIDEO_DSE_PASSWORD: $KILLRVIDEO_DSE_PASSWORD
+  #    NODE_ENV: $NODE_ENV
+  #    KILLRVIDEO_CASSANDRA_REPLICATION: $KILLRVIDEO_CASSANDRA_REPLICATION
+  #    KILLRVIDEO_LOGGING_LEVEL: $KILLRVIDEO_LOGGING_LEVEL
 
   # One instance of DataStax Studio
-  studio:
-    image: datastax/dse-studio:6.0.0
-    ports:
-    # The Web UI exposed to our host
-    - "9091:9091"
-    depends_on:
-    - dse
-    environment:
-      SERVICE_9091_NAME: studio
-      DS_LICENSE: accept
-
+  #studio:
+  #  image: datastax/dse-studio:6.0.2
+  #  ports:
+  # The Web UI exposed to our host
+  #  - "9091:9091"
+  #  depends_on:
+  #  - dse
+  #  environment:
+  #    SERVICE_9091_NAME: studio
+  #    DS_LICENSE: accept
