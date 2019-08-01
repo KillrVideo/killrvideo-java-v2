@@ -90,8 +90,14 @@ public class DseConfiguration {
     @Value("${killrvideo.ssl.CACertFileLocation: cassandra.cert}")
     private String sslCACertFileLocation;
     
+    @Value("#{environment.KILLRVIDEO_SSL_CERTIFICATE}")
+    public Optional < String > sslCACertFileLocationEnvVar;
+    
     @Value("${killrvideo.ssl.enable: false}")
     public boolean dseEnableSSL = false;
+    
+    @Value("#{environment.KILLRVIDEO_ENABLE_SSL}")
+    public Optional < Boolean > dseEnableSSLEnvVar;
     
     @Value("${killrvideo.etcd.enabled : true}")
     private boolean etcdLookup = false;
@@ -233,6 +239,8 @@ public class DseConfiguration {
                     .map(this::asSocketInetAdress)
                     .filter(node -> node.isPresent())
                     .map(node -> node.get())
+                    // Use one node port to setup - they are all the same
+                    .peek(node -> clusterConfig.withPort(node.getPort()))
                     .map(adress -> adress.getHostName())
                     .forEach(clusterConfig::addContactPoint);
     }
@@ -301,6 +309,15 @@ public class DseConfiguration {
      *      current configuration
      */
     private void populateSSL(Builder clusterConfig) {
+    	
+    	// Reading Environment Variables to eventually override default config
+    	if (!dseEnableSSLEnvVar.isEmpty()) {
+    		dseEnableSSL = dseEnableSSLEnvVar.get();
+    		if (!sslCACertFileLocationEnvVar.isEmpty()) {
+    			sslCACertFileLocation = sslCACertFileLocationEnvVar.get();
+    		}
+    	}
+    	
         if (dseEnableSSL) {
             LOGGER.info(" + SSL is enabled, using supplied SSL certificate: '{}'", sslCACertFileLocation);
              try {

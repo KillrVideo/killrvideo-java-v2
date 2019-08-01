@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 
 import com.killrvideo.messaging.dao.MessagingDao;
 import com.killrvideo.service.rating.dao.RatingDseDao;
+import com.killrvideo.utils.GrpcMappingUtils;
 
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
@@ -28,6 +29,7 @@ import killrvideo.ratings.RatingsServiceOuterClass.GetUserRatingRequest;
 import killrvideo.ratings.RatingsServiceOuterClass.GetUserRatingResponse;
 import killrvideo.ratings.RatingsServiceOuterClass.RateVideoRequest;
 import killrvideo.ratings.RatingsServiceOuterClass.RateVideoResponse;
+import killrvideo.ratings.events.RatingsEvents.UserRatedVideo;
 
 /**
  * Operations on Ratings with GRPC.
@@ -72,12 +74,12 @@ public class RatingsServiceGrpc extends RatingsServiceImplBase {
         dseRatingDao.rateVideo(videoid, userid, rate).whenComplete((result, error) -> {
             if (error == null) {
                 traceSuccess("rateVideo", starts);
-                /*messagingDao.sendEvent(topicvideoRated, 
+                messagingDao.sendEvent(topicvideoRated, 
                         UserRatedVideo.newBuilder()
                         .setRating(grpcReq.getRating())
-                        .setRatingTimestamp(instantToTimeStamp(Instant.now()))
+                        .setRatingTimestamp(GrpcMappingUtils.instantToTimeStamp(Instant.now()))
                         .setUserId(grpcReq.getUserId())
-                        .setVideoId(grpcReq.getVideoId()).build());*/
+                        .setVideoId(grpcReq.getVideoId()).build());
                 grpcResObserver.onNext(RateVideoResponse.newBuilder().build());
                 grpcResObserver.onCompleted();
             } else {
