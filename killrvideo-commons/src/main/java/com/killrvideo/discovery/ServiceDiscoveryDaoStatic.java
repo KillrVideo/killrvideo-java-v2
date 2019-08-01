@@ -53,8 +53,8 @@ public class ServiceDiscoveryDaoStatic implements ServiceDiscoveryDao {
         List< String > endPointList = new ArrayList<>();
         LOGGER.info(" + Lookup for key '{}':", serviceName);
         if (kafkaServiceName.equalsIgnoreCase(serviceName)) {
-        	if (!kafkaBrokersEnvVar.isEmpty()) {
-        		cassandraContactPoints = kafkaBrokersEnvVar.get();
+        	if (!kafkaBrokersEnvVar.isEmpty() && !kafkaBrokersEnvVar.get().isBlank()) {
+        	    cassandraContactPoints = kafkaBrokersEnvVar.get();
         		LOGGER.info(" + Reading broker from KILLRVIDEO_KAFKA_BROKERS");
         	}
         	Arrays.asList(kafkaBrokers.split(",")).stream()
@@ -63,7 +63,7 @@ public class ServiceDiscoveryDaoStatic implements ServiceDiscoveryDao {
         } else if (cassandraServiceName.equalsIgnoreCase(serviceName)) {
         	// Explicit overwriting of contact points from env var
         	// Better than default spring : simpler
-        	if (!cassandraContactPointsEnvVar.isEmpty()) {
+        	if (!cassandraContactPointsEnvVar.isEmpty() && !cassandraContactPointsEnvVar.get().isBlank()) {
         		cassandraContactPoints = cassandraContactPointsEnvVar.get();
         		LOGGER.info(" + Reading contactPoints from KILLRVIDEO_DSE_CONTACTPOINTS");
         	}
